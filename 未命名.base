@@ -1,0 +1,19 @@
+formulas:
+  未命名: ""
+views:
+  - type: cards
+    name: 表格
+    filters:
+      and:
+        - file.ext.endsWith("md")
+    order:
+      - file.links
+      - formula.未命名
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: list
+    name: 视图
+    markers: number
+  - type: cards
+    name: 视图 2
