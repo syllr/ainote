@@ -1,9 +1,6 @@
 # Claude Code local configuration
 .claude/
 
-# Obsidian local configuration
-.obsidian/
-
 # Python virtual environment
 .venv/
 
