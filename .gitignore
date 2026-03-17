@@ -10,3 +10,7 @@
 # macOS DS_Store file
 .DS_Store
 **/.DS_Store
+
+# Obsidian local workspace and session files
+.obsidian/workspace.json
+.obsidian/plugins/agent-client/sessions/
