@@ -4,7 +4,7 @@
   "createInstanceNearExistingOnes": true,
   "errorNoticeTimeout": 0,
   "exposeInternalModules": true,
-  "focusOnNewInstance": true,
+  "focusOnNewInstance": false,
   "hideStatusBar": "focused",
   "interceptLogging": true,
   "language": "",
@@ -59,7 +59,7 @@
         "documentOverride": null
       },
       "type": "integrated",
-      "useWin32Conhost": true
+      "useWin32Conhost": false
     },
     "developerConsole": {
       "followTheme": true,

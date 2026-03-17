@@ -55,6 +55,14 @@
   },
   "savedSessions": [
     {
+      "sessionId": "af0ae5e6-67bd-4dac-88fb-472e4a444978",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "这个文档里面, 我想在它的标题上写一个标题,标题的意思就是:我今天想到要做的任务,但是不一定是今天完...",
+      "createdAt": "2026-03-17T23:31:09.666Z",
+      "updatedAt": "2026-03-17T23:31:09.667Z"
+    },
+    {
       "sessionId": "c5693435-7cd8-4633-b588-d3467cd3b840",
       "agentId": "claude-code-acp",
       "cwd": "/Users/yutao/ainote",
