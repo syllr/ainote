@@ -7,4 +7,9 @@
 # Python virtual environment
 .venv/
 
+# JetBrains IDE configuration
 .idea/
+
+# macOS DS_Store file
+.DS_Store
+**/.DS_Store
