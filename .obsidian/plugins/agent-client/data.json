@@ -55,6 +55,14 @@
   },
   "savedSessions": [
     {
+      "sessionId": "4eee61fd-e3f6-402f-9247-1f0e77d6ee24",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "search看下claude-agent-acp这个版本更新了啥功能",
+      "createdAt": "2026-03-18T01:46:51.018Z",
+      "updatedAt": "2026-03-18T01:46:51.018Z"
+    },
+    {
       "sessionId": "af0ae5e6-67bd-4dac-88fb-472e4a444978",
       "agentId": "claude-code-acp",
       "cwd": "/Users/yutao/ainote",
@@ -69,14 +77,6 @@
       "title": "obsidian里面的date笔记要怎么整理?我看默认新建的date笔记都是直接新建到项目的根目录里...",
       "createdAt": "2026-03-17T22:11:11.614Z",
       "updatedAt": "2026-03-17T22:11:11.615Z"
-    },
-    {
-      "sessionId": "69c29bea-caa9-4614-868a-d5338cb55459",
-      "agentId": "claude-code-acp",
-      "cwd": "/Users/yutao/ainote",
-      "title": "测试",
-      "createdAt": "2026-03-17T06:55:32.095Z",
-      "updatedAt": "2026-03-17T06:55:32.096Z"
     }
   ],
   "lastUsedModels": {

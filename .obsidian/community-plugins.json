@@ -4,5 +4,6 @@
   "vscode-editor",
   "terminal",
   "obsidian42-brat",
-  "agent-client"
+  "agent-client",
+  "quickadd"
 ]
