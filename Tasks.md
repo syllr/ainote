@@ -54,7 +54,17 @@ sort by due
 
 ---
 
-## 📊 按项目分组（所有未完成）
+## 📊 按父任务分组（显示嵌套结构）
+
+```tasks
+not done
+sort by priority
+group by parent
+```
+
+---
+
+## 🏷️ 按项目分组（所有未完成）
 
 ```tasks
 not done
