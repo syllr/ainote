@@ -46,6 +46,36 @@
       "templater": {
         "afterCapture": "none"
       }
+    },
+    {
+      "id": "b7e764f8-dce9-4a25-b2f5-219b61679d75",
+      "name": "createskill",
+      "type": "Template",
+      "command": true,
+      "templatePath": "00-System/Templates/Skill/SkillCreate.md",
+      "fileNameFormat": {
+        "enabled": true,
+        "format": "skill-{{value}}-create.md"
+      },
+      "folder": {
+        "enabled": true,
+        "folders": [
+          "02-Learning/claude/skill"
+        ],
+        "chooseWhenCreatingNote": false,
+        "createInSameFolderAsActiveFile": false,
+        "chooseFromSubfolders": false
+      },
+      "appendLink": false,
+      "openFile": false,
+      "fileOpening": {
+        "location": "tab",
+        "direction": "vertical",
+        "mode": "default",
+        "focus": true
+      },
+      "fileExistsMode": "Increment the file name",
+      "setFileExistsBehavior": false
     }
   ],
   "inputPrompt": "multi-line",
