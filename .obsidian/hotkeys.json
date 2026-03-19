@@ -77,5 +77,14 @@
       ],
       "key": "I"
     }
+  ],
+  "file-explorer:open": [
+    {
+      "modifiers": [
+        "Ctrl",
+        "Mod"
+      ],
+      "key": "1"
+    }
   ]
 }

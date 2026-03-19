@@ -55,6 +55,22 @@
   },
   "savedSessions": [
     {
+      "sessionId": "65d07d2e-4e7c-44e3-8c89-9f9075865a0b",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "claude里面的rule到底是啥,找下官方文档,总结下,然后把文档地址贴给我",
+      "createdAt": "2026-03-19T02:29:06.952Z",
+      "updatedAt": "2026-03-19T02:29:06.953Z"
+    },
+    {
+      "sessionId": "ee883f86-a3e8-4cde-b6a3-ddf6cb24b1c2",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "我在macos下面用小窗模式打开腾讯元宝的时候,这个中文的输入法的候选框中的中文会消失,请帮忙定位下...",
+      "createdAt": "2026-03-19T00:55:18.745Z",
+      "updatedAt": "2026-03-19T00:55:18.746Z"
+    },
+    {
       "sessionId": "4eee61fd-e3f6-402f-9247-1f0e77d6ee24",
       "agentId": "claude-code-acp",
       "cwd": "/Users/yutao/ainote",
