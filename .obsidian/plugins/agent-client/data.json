@@ -55,6 +55,14 @@
   },
   "savedSessions": [
     {
+      "sessionId": "061dee30-affe-47e5-86a5-7e81e593e2be",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "这个是啥配资?",
+      "createdAt": "2026-03-20T04:49:44.282Z",
+      "updatedAt": "2026-03-20T04:49:44.282Z"
+    },
+    {
       "sessionId": "65d07d2e-4e7c-44e3-8c89-9f9075865a0b",
       "agentId": "claude-code-acp",
       "cwd": "/Users/yutao/ainote",
