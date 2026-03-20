@@ -4,7 +4,7 @@
 title: Claude 学习笔记
 description: Claude Code skill-creator 完整指南和自定义 Skill 开发笔记
 baseurl: "/ainote"  # 如果仓库名是 username.github.io，改为空字符串 ""
-url: "https://yutao.github.io"  # 你的 GitHub Pages URL，去掉末尾斜杠
+url: "https://syllr.github.io"  # 你的 GitHub Pages URL，去掉末尾斜杠
 
 # 主题设置 - 使用 GitHub Pages 默认 minima 主题
 theme: minima
