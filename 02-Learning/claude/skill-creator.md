@@ -8,16 +8,17 @@
 
 ### 什么是 skill-creator
 
-**skill-creator** 是 Claude Code 官方提供的**用于创建、测试、优化自定义 Skill 的内置工具/技能**，它是 Claude Code 插件生态系统的一部分，遵循 [Agent Skills](https://agentskills.io) 开放标准。
+**skill-creator** 是 Claude Code 官方提供的**用于创建、测试、优化自定义 Skill 的内置工具/技能**，它是 Claude Code
+插件生态系统的一部分，遵循 [Agent Skills](https://agentskills.io) 开放标准。
 
 你可以把它理解为 Claude Code 的**"Skill 开发 IDE"**——从零创建到测试优化，一站式搞定自定义 Skill。
 
 ### 核心定位
 
-| 维度 | 说明 |
-|------|------|
-| **定位** | Claude Code 官方预置的 Skill 开发工具 |
-| **目标用户** | 需要自定义工作流的开发者、团队 |
+| 维度       | 说明                                         |
+|----------|--------------------------------------------|
+| **定位**   | Claude Code 官方预置的 Skill 开发工具               |
+| **目标用户** | 需要自定义工作流的开发者、团队                            |
 | **设计哲学** | 将软件工程方法引入 Skill 开发，让自定义 Skill 从"玩具"变成生产级可用 |
 
 ### 核心作用
@@ -30,13 +31,13 @@
 
 ### 它解决什么问题
 
-| 问题 | skill-creator 解决方案 |
-|------|--------------------------|
-| 手动创建 Skill 格式不规范 | 自动生成符合官方规范的模板 |
-| Skill 测试全凭感觉，无法保证质量 | 系统化编写 evals 自动化测试 |
-| Claude 更新后 Skill 悄悄失效 | 基准测试可快速验证有效性 |
-| Skill 写好了但触发不了 | 优化 description 匹配用户实际输入 |
-| 重复给 Claude 发相同指令，记不住 | Skill 持久化存储，一次创建随处可用 |
+| 问题                    | skill-creator 解决方案      |
+|-----------------------|-------------------------|
+| 手动创建 Skill 格式不规范      | 自动生成符合官方规范的模板           |
+| Skill 测试全凭感觉，无法保证质量   | 系统化编写 evals 自动化测试       |
+| Claude 更新后 Skill 悄悄失效 | 基准测试可快速验证有效性            |
+| Skill 写好了但触发不了        | 优化 description 匹配用户实际输入 |
+| 重复给 Claude 发相同指令，记不住  | Skill 持久化存储，一次创建随处可用    |
 
 一句话总结：**skill-creator 把你重复的工作流 → 变成 Claude 可稳定调用的结构化能力**，让 Claude 从聊天机器人升级为可编程开发助理。
 
@@ -66,12 +67,12 @@ cp -r skills/skills/skill-creator ~/.claude/skills/
 
 skill-creator 有四种核心工作模式，满足不同阶段需求：
 
-| 模式 | 功能 | 调用示例 |
-|------|------|----------|
-| **Create** | 引导式问答从零构建新 Skill，生成草稿和初始测试用例 | `/skill-creator "create a new skill for reviewing PRs"` |
-| **Eval** | 对现有 Skill 运行测试 prompts，生成 HTML 报告展示结果 | `/skill-creator "run evals on my PDF skill"` |
-| **Improve** | 基于失败的 evals 迭代优化 Skill 指令 | `/skill-creator "improve my PRD skill based on failing evals"` |
-| **Benchmark** | 多次运行 evals 进行方差分析，对比有/无 Skill 表现 | `/skill-creator "benchmark my skill across 10 runs"` |
+| 模式            | 功能                                    | 调用示例                                                           |
+|---------------|---------------------------------------|----------------------------------------------------------------|
+| **Create**    | 引导式问答从零构建新 Skill，生成草稿和初始测试用例          | `/skill-creator "create a new skill for reviewing PRs"`        |
+| **Eval**      | 对现有 Skill 运行测试 prompts，生成 HTML 报告展示结果 | `/skill-creator "run evals on my PDF skill"`                   |
+| **Improve**   | 基于失败的 evals 迭代优化 Skill 指令             | `/skill-creator "improve my PRD skill based on failing evals"` |
+| **Benchmark** | 多次运行 evals 进行方差分析，对比有/无 Skill 表现      | `/skill-creator "benchmark my skill across 10 runs"`           |
 
 ### 3. 创建第一个 Skill：完整实战
 
@@ -90,10 +91,11 @@ skill-creator 有四种核心工作模式，满足不同阶段需求：
 skill-creator 会问你几个问题：
 
 - Skill 叫什么名字？（示例：`sql-uppercase`）
-- 功能描述是什么？什么时候触发？（示例："Convert all SQL keywords to uppercase. Use when user wants to format SQL queries."）
+- 功能描述是什么？什么时候触发？（示例：'Convert all SQL keywords to uppercase. Use when user wants to format SQL queries.'）
 - 需要什么输入？（示例：`SQL text or file path`）
 - 期望输出是什么？（示例：`Formatted SQL with keywords in uppercase`）
-- 有哪些特殊规则需要遵守？（示例：`Don't change string literals, preserve original formatting, only keywords should be uppercased`）
+- 有哪些特殊规则需要遵守？（示例：
+  `Don't change string literals, preserve original formatting, only keywords should be uppercased`）
 - Claude 绝对不应该做什么？（示例：`Don't rewrite the query logic, don't add semicolons where none existed`）
 
 #### Step 3：获取生成结果
@@ -125,7 +127,8 @@ skill-creator 会问你几个问题：
 }
 ```
 
-> ⚠️ 关键原则：expectations **必须可验证**。"Output is high quality" 无效，"Output includes a Problem Statement section" 才有效。
+> ⚠️ 关键原则：expectations **必须可验证**。'Output is high quality' 无效，'Output includes a Problem Statement section'
+> 才有效。
 
 #### Step 5：运行测试
 
@@ -134,6 +137,7 @@ skill-creator 会问你几个问题：
 ```
 
 skill-creator 会：
+
 - 为每个 eval 启动独立的隔离子代理
 - 运行 Skill 得到输出
 - Grader 逐条件检查是否通过
@@ -146,6 +150,7 @@ skill-creator 会：
 ```
 
 skill-creator 会：
+
 - 按 60/40 分割训练集和保留测试集
 - 分析失败原因，提出 `SKILL.md` 修改建议
 - 迭代改进，最多 5 轮避免过拟合
@@ -159,10 +164,10 @@ skill-creator 会：
 
 你会得到类似这样的数据：
 
-| 模式 | Pass Rate | Avg Tokens | Avg Time |
-|------|-----------|------------|----------|
-| With skill | 94% | 4,210 | 18s |
-| Without skill | 61% | 3,890 | 15s |
+| 模式            | Pass Rate | Avg Tokens | Avg Time |
+|---------------|-----------|------------|----------|
+| With skill    | 94%       | 4,210      | 18s      |
+| Without skill | 61%       | 3,890      | 15s      |
 
 结论：Skill 只增加了少量 token 开销，但通过率提升了 33 个百分点，确有价值。
 
@@ -233,6 +238,7 @@ model: claude-sonnet-4-6
 context: fork
 agent: Explore
 ---
+```
 
 # Skill 名称
 
@@ -253,33 +259,32 @@ agent: Explore
 ## 使用示例
 
 `/my-skill-name input`
-```
 
 #### Frontmatter 字段说明
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | string | 否 | Skill 显示名称，省略则使用目录名 |
-| `description` | string | 推荐 | 功能描述和触发时机，Claude 用它决定何时自动加载 |
-| `disable-model-invocation` | boolean | 否 | `true` = 禁止 Claude 自动触发，只能手动调用。默认 `false` |
-| `user-invocable` | boolean | 否 | `false` = 从 `/` 菜单隐藏，仅供 Claude 自动调用。默认 `true` |
-| `argument-hint` | string | 否 | 自动补全提示，示例：`[issue-number]` |
-| `allowed-tools` | string | 否 | 此 Skill 激活时，Claude 可以无需批准直接使用的工具 |
-| `model` | string | 否 | 指定此 Skill 使用的模型 |
-| `context` | string | 否 | `fork` = 在分叉 subagent 中运行 |
-| `agent` | string | 否 | `context: fork` 时指定 subagent 类型（`Explore`/`Plan`/`general-purpose`） |
+| 字段                         | 类型      | 必填 | 说明                                                                  |
+|----------------------------|---------|----|---------------------------------------------------------------------|
+| `name`                     | string  | 否  | Skill 显示名称，省略则使用目录名                                                 |
+| `description`              | string  | 推荐 | 功能描述和触发时机，Claude 用它决定何时自动加载                                         |
+| `disable-model-invocation` | boolean | 否  | `true` = 禁止 Claude 自动触发，只能手动调用。默认 `false`                           |
+| `user-invocable`           | boolean | 否  | `false` = 从 `/` 菜单隐藏，仅供 Claude 自动调用。默认 `true`                       |
+| `argument-hint`            | string  | 否  | 自动补全提示，示例：`[issue-number]`                                          |
+| `allowed-tools`            | string  | 否  | 此 Skill 激活时，Claude 可以无需批准直接使用的工具                                    |
+| `model`                    | string  | 否  | 指定此 Skill 使用的模型                                                     |
+| `context`                  | string  | 否  | `fork` = 在分叉 subagent 中运行                                           |
+| `agent`                    | string  | 否  | `context: fork` 时指定 subagent 类型（`Explore`/`Plan`/`general-purpose`） |
 
 #### 动态参数替换
 
 Skill 支持变量替换：
 
-| 变量 | 说明 |
-|------|------|
-| `$ARGUMENTS` | 所有参数 |
-| `$ARGUMENTS[N]` | 第 N 个参数（0 索引） |
-| `$N` | `$ARGUMENTS[N]` 简写 |
-| `${CLAUDE_SESSION_ID}` | 当前会话 ID |
-| `${CLAUDE_SKILL_DIR}` | Skill 目录的绝对路径（用于引用 scripts） |
+| 变量                     | 说明                          |
+|------------------------|-----------------------------|
+| `$ARGUMENTS`           | 所有参数                        |
+| `$ARGUMENTS[N]`        | 第 N 个参数（0 索引）               |
+| `$N`                   | `$ARGUMENTS[N]` 简写          |
+| `${CLAUDE_SESSION_ID}` | 当前会话 ID                     |
+| `${CLAUDE_SKILL_DIR}`  | Skill 目录的绝对路径（用于引用 scripts） |
 
 示例：
 
@@ -313,15 +318,16 @@ allowed-tools: Bash(gh *)
 ## PR 数据
 - Diff: !`gh pr diff`
 - Comments: !`gh pr view --comments`
+```
 
 Summarize this pull request...
-```
 
 运行时，所有 `!`command`` 会先执行，输出插入到内容中再发给 Claude。
 
 ### 2. skill-creator 自身源码结构
 
-skill-creator 本身就是一个 Skill，它的目录结构如下（来自官方 [anthropics/skills](https://github.com/anthropics/skills) 仓库）：
+skill-creator 本身就是一个 Skill，它的目录结构如下（来自官方 [anthropics/skills](https://github.com/anthropics/skills)
+仓库）：
 
 ```
 skill-creator/
@@ -423,14 +429,15 @@ Analyzer 分析失败案例，找出问题根源
 
 **答：你不需要任何手动操作，整个过程全自动。**
 
-| 模式 | temp 目录使用吗？ | 最终输出位置 | 说明 |
-|------|------------------|--------------|------|
-| **Create** | ❌ 不用 | `~/.claude/skills/<skill-name>/` | 问答完成后**直接**创建到正式目录，全程不碰 temp |
-| **Eval** | ✅ 运行时用 | 不修改正式文件 | 只是在隔离上下文运行测试，正式目录的 Skill 文件保持不变 |
-| **Improve** | ✅ 迭代用 | `~/.claude/skills/<skill-name>/SKILL.md` | 在 temp 测试多个候选版本 → 选出分数最高的 → **自动替换**正式文件 |
-| **Benchmark** | ✅ 测试用 | 不修改正式文件 | 在 temp 多次运行对比测试，测试完自动清理，不影响正式文件 |
+| 模式            | temp 目录使用吗？ | 最终输出位置                                   | 说明                                       |
+|---------------|-------------|------------------------------------------|------------------------------------------|
+| **Create**    | ❌ 不用        | `~/.claude/skills/<skill-name>/`         | 问答完成后**直接**创建到正式目录，全程不碰 temp             |
+| **Eval**      | ✅ 运行时用      | 不修改正式文件                                  | 只是在隔离上下文运行测试，正式目录的 Skill 文件保持不变          |
+| **Improve**   | ✅ 迭代用       | `~/.claude/skills/<skill-name>/SKILL.md` | 在 temp 测试多个候选版本 → 选出分数最高的 → **自动替换**正式文件 |
+| **Benchmark** | ✅ 测试用       | 不修改正式文件                                  | 在 temp 多次运行对比测试，测试完自动清理，不影响正式文件          |
 
 **关键结论：**
+
 - **Create 一开始就写入正式目录**，不是先在 temp 再等你确认
 - **只有 Improve 迭代优化会用到 temp**，测试完自动把最优版本放到正式目录
 - **全程不需要你手动复制/移动文件**，skill-creator 全帮你做好了
@@ -440,10 +447,10 @@ Analyzer 分析失败案例，找出问题根源
 
 skill-creator 区分两种不同类型的 Skill，采用不同测试策略：
 
-| 类型 | 说明 | 测试重点 |
-|------|------|----------|
-| **Capability Uplift Skills** | 赋予 Claude 原本无法可靠完成的能力（比如生成特定格式的 PDF/docx 文件） | 验证模型更新后 Skill 是否仍然有效；检查是否还存在价值（如果基础模型已经学会了，可以退役） |
-| **Encoded Preference Skills** | 为 Claude 已能完成的任务编码团队/个人偏好（比如特定的 PRD 格式、code review 检查清单） | 验证小修改不会意外跳过某个步骤，保持保真度 |
+| 类型                            | 说明                                                       | 测试重点                                             |
+|-------------------------------|----------------------------------------------------------|--------------------------------------------------|
+| **Capability Uplift Skills**  | 赋予 Claude 原本无法可靠完成的能力（比如生成特定格式的 PDF/docx 文件）             | 验证模型更新后 Skill 是否仍然有效；检查是否还存在价值（如果基础模型已经学会了，可以退役） |
+| **Encoded Preference Skills** | 为 Claude 已能完成的任务编码团队/个人偏好（比如特定的 PRD 格式、code review 检查清单） | 验证小修改不会意外跳过某个步骤，保持保真度                            |
 
 ### 6. 常见最佳实践与陷阱
 
@@ -457,7 +464,8 @@ skill-creator 区分两种不同类型的 Skill，采用不同测试策略：
 
 #### ❌ 常见陷阱
 
-- `description` 太笼统："Helps with writing" → 优化为 "Helps writing product requirement documents (PRDs). Use when user mentions 'PRD', 'requirement doc', 'user stories'"
+- `description` 太笼统：'Helps with writing' → 优化为 "Helps writing product requirement documents (PRDs). Use when user
+  mentions 'PRD', 'requirement doc', 'user stories'"
 - Expectations 模糊：无法被 Grader 准确判断，结果不可靠
 - 只测试正确输入不测试边缘情况：真正使用时遇到异常就会失败
 
@@ -467,7 +475,8 @@ skill-creator 区分两种不同类型的 Skill，采用不同测试策略：
 
 ### 一句话概括
 
-**skill-creator 是 Claude Code 官方提供的 Skill 开发工具，它让你可以把重复的工作流持久化、标准化，并通过测试方法保证质量，最终得到可复用、可自动化的自定义能力。**
+**skill-creator 是 Claude Code 官方提供的 Skill 开发工具，它让你可以把重复的工作流持久化、标准化，并通过测试方法保证质量，最终得到可复用、可自动化的自定义能力。
+**
 
 ### 适用场景
 
