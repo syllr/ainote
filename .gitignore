@@ -11,3 +11,11 @@
 # Obsidian local workspace and session files
 .obsidian/workspace.json
 .obsidian/plugins/agent-client/sessions/
+
+# Jekyll / GitHub Pages
+_site/
+.jekyll-cache/
+.sass-cache/
+.jekyll-metadata/
+vendor/
+.bundle/
