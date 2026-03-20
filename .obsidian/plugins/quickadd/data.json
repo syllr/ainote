@@ -74,8 +74,8 @@
         "mode": "default",
         "focus": true
       },
-      "fileExistsMode": "Increment the file name",
-      "setFileExistsBehavior": false
+      "fileExistsMode": "Nothing",
+      "setFileExistsBehavior": true
     }
   ],
   "inputPrompt": "multi-line",
