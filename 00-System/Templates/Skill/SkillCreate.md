@@ -3,43 +3,50 @@
 // This will prompt you for all variables one by one
 // Fifth parameter = true enables multi-line input
 
+const level = await tp.system.prompt(
+  "1/6 Skill 级别：输入 user 创建用户级全局 Skill，输入 project 创建项目级 Skill：",
+  "user",
+  true,
+  {},
+  false
+);
 const skill_name = await tp.system.prompt(
-  "1/5 Skill 名称（小写加连字符，例如：sql-uppercase）：",
+  "2/6 Skill 名称（小写加连字符，例如：sql-uppercase）：",
   "",
   true,
   {},
   false // 名称用单行足够
 );
 const description = await tp.system.prompt(
-  "2/5 功能描述（做什么，什么时候触发，例如：转换 SQL 关键字为大写，当用户需要格式化 SQL 时使用）：",
+  "3/6 功能描述（做什么，什么时候触发，例如：转换 SQL 关键字为大写，当用户需要格式化 SQL 时使用）：",
   "",
   true,
   {},
   true // 描述需要多行
 );
 const inputs = await tp.system.prompt(
-  "3/5 需要什么输入：",
+  "4/6 需要什么输入：",
   "",
   true,
   {},
   true // 多行
 );
 const output = await tp.system.prompt(
-  "4/5 期望输出是什么：",
+  "5/6 期望输出是什么：",
   "",
   true,
   {},
   true // 多行
 );
 const rules = await tp.system.prompt(
-  "5/9 Claude 必须遵守的规则（每条规则一行）：",
+  "6/10 Claude 必须遵守的规则（每条规则一行）：",
   "",
   true,
   {},
   true // 多行
 );
 const prohibited = await tp.system.prompt(
-  "6/9 Claude 绝对不能做的事（每条一行）：",
+  "7/10 Claude 绝对不能做的事（每条一行）：",
   "",
   true,
   {},
@@ -62,6 +69,7 @@ tR += `
 ## Skill 基本信息
 
 - **Skill 名称**: \`${skill_name}\`
+- **Skill 级别**: \`${level}\`（user = 用户级全局 Skill，project = 项目级 Skill）
 - **功能描述**（做什么，什么时候触发）:
 
 ${description}

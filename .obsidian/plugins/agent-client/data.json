@@ -55,6 +55,30 @@
   },
   "savedSessions": [
     {
+      "sessionId": "78ce4934-1eb1-48f1-9ae8-b797f4075bb7",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "role:你是一个llm大模型提示词工程专家,可以使用最准确,最少的token,让大模型理解你的问题...",
+      "createdAt": "2026-03-20T09:34:05.288Z",
+      "updatedAt": "2026-03-20T09:34:05.288Z"
+    },
+    {
+      "sessionId": "8d853297-b681-4a72-86a5-fbeefc6db985",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "/prompt 帮忙search下网络,看下是否需要在输入提示词的时候,给ai指定role,我理解是...",
+      "createdAt": "2026-03-20T09:06:42.423Z",
+      "updatedAt": "2026-03-20T09:06:42.423Z"
+    },
+    {
+      "sessionId": "5f87e2f7-2511-46b7-8a3b-2bafef180b99",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "/Users/yutao/ainote/00-System/Templates/Skill 这个路径...",
+      "createdAt": "2026-03-20T08:27:21.712Z",
+      "updatedAt": "2026-03-20T08:27:21.712Z"
+    },
+    {
       "sessionId": "061dee30-affe-47e5-86a5-7e81e593e2be",
       "agentId": "claude-code-acp",
       "cwd": "/Users/yutao/ainote",
@@ -106,7 +130,9 @@
   "lastUsedModels": {
     "claude-code-acp": "ark-code-latest"
   },
-  "lastUsedModes": {},
+  "lastUsedModes": {
+    "claude-code-acp": "acceptEdits"
+  },
   "enableFloatingChat": false,
   "floatingButtonImage": "",
   "floatingWindowSize": {

@@ -240,6 +240,7 @@ agent: Explore
 ---
 ```
 
+```markdown
 # Skill 名称
 
 这里是详细的指令说明，告诉 Claude 具体该怎么做。
@@ -258,7 +259,8 @@ agent: Explore
 
 ## 使用示例
 
-`/my-skill-name input`
+\`/my-skill-name input\`
+```
 
 #### Frontmatter 字段说明
 
@@ -471,7 +473,159 @@ skill-creator 区分两种不同类型的 Skill，采用不同测试策略：
 
 ---
 
-## 四、总结
+## 四、端到端完整实战：创建并优化一个 prompt skill
+
+我们刚刚完成了从零创建 `prompt` skill 并通过两轮迭代优化到可用的完整流程。这里把每一步记录下来，作为参考。
+
+### 实际案例：创建"提示词优化专家"skill
+
+#### 步骤 1：初始创建（用户发起）
+
+用户输入：
+```
+/skill-creator "create a new skill called prompt, that optimizes user prompts based on Anthropic and OpenAI official best practices"
+```
+
+skill-creator 会自动：
+1. 问你几个澄清问题（功能描述、触发时机、输入输出、规则等）
+2. 创建目录结构：`~/.claude/skills/prompt/`
+3. 生成 `SKILL.md` 初稿和 `evals/evals.json` 测试用例模板
+
+#### 步骤 2：完善测试用例
+
+编辑 `evals/evals.json`，添加 realistic 的测试用例：
+
+```json
+{
+  "skill_name": "prompt",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/prompt \"帮我写代码\"",
+      "expected_output": "识别出原提示词极度模糊，会提问澄清：需要什么语言的代码，做什么功能，有什么具体要求，输出格式是什么",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/prompt \"帮我做个网站\"",
+      "expected_output": "会按照 7 维度框架分析：角色定位缺失、任务不明确、缺少上下文、缺少示例、没说输出格式、没说约束、没有工作流程。然后给出完整结构化优化后的提示词",
+      "files": []
+    }
+  ]
+}
+```
+
+**关键**：`expected_output` 描述你期望的行为，不需要机器可解析，因为最终是**人工评审**。
+
+#### 步骤 3：第一轮测试
+
+运行：
+```
+/skill-creator "run evals on prompt"
+```
+
+skill-creator 会：
+- 为每个测试用例创建独立的隔离子代理
+- 并行运行所有测试（N 个测试用例 × 2 种配置 = 2N 个任务）
+- 保存所有输出
+- 生成静态 HTML 报告：`/tmp/prompt-iteration-1.html`
+
+#### 步骤 4：人工评审填写反馈
+
+在浏览器打开 HTML 报告，你会看到：
+
+- **Outputs 标签页**：逐个浏览每个测试用例的输出
+- 每个测试用例左侧是旧版本（或 baseline），右侧是当前版本
+- 在 "YOUR FEEDBACK" 文本框填写你的反馈
+- 全部填完后点击 **Submit All Reviews**
+- 浏览器会自动下载 `feedback.json` 文件到你的 `~/Downloads/` 目录
+
+#### 步骤 5：基于反馈改进
+
+把下载的 `feedback.json` 给 Claude：
+```
+/skill-creator "improve prompt based on feedback /Users/yourname/Downloads/feedback.json"
+```
+
+skill-creator 会：
+1. 读取你的反馈，理解哪些测试用例失败、问题是什么
+2. 分析失败原因，修改 `SKILL.md`
+3. 创建第二轮测试目录 `iteration-2/`
+4. 重新运行所有测试用例
+5. 生成新的 HTML 报告，这一次会带上**上一轮对比**
+
+#### 步骤 6：重复评审迭代
+
+你再次：
+1. 在浏览器打开新的 HTML 报告
+2. 查看修复后的输出对比
+3. 填写反馈 → 下载 `feedback.json`
+4. 交给 skill-creator 继续改进
+
+**迭代终止条件**：当所有测试用例的输出都符合你的预期，反馈为空或全为"great"，迭代结束。
+
+#### 步骤 7：（可选）触发优化
+
+如果你希望提高 Claude 自动触发准确率，可以运行：
+```
+/skill-creator "optimize description for prompt"
+```
+
+skill-creator 会：
+1. 生成 20 个触发测试 queries（混合 should-trigger/should-not-trigger）
+2. 迭代优化 description，测试不同版本的触发准确率
+3. 选择测试集上得分最高的 description 更新到 `SKILL.md`
+
+### 完整流程总结（你刚刚走完的）
+
+```
+用户需求 → skill-creator 初始创建 → 你写测试用例 → 第一轮测试 →
+    ↓
+你在浏览器评审 → 填写反馈 → 下载 feedback.json → skill-creator 读取反馈 →
+    ↓
+skill-creator 修改 SKILL.md → 生成新一轮测试 → 你再次评审 →
+    ↓
+重复直到满意 → （可选）优化触发描述 → 完成
+```
+
+### 反馈 JSON 格式说明
+
+当你点击 "Submit All Reviews" 下载的 `feedback.json` 格式如下：
+
+```json
+{
+  "reviews": [
+    {
+      "run_id": "eval-0-with_skill",
+      "feedback": "great",
+      "timestamp": "2026-03-20T10:00:25.621Z"
+    },
+    {
+      "run_id": "eval-2-old_skill",
+      "feedback": "这个case应该是用户给出了合理清晰的提示词，你应该告知用户这个提示词没有问题，我会按照用户的提示词来执行任务，然后请求用户的批准",
+      "timestamp": "2026-03-20T10:00:25.621Z"
+    }
+  ],
+  "status": "complete"
+}
+```
+
+- `run_id`: 哪个运行（`eval-ID-{with_skill/old_skill}`）
+- `feedback`: 你的反馈文字描述，空字符串表示没问题
+
+skill-creator 会**逐句理解你的反馈**，自动定位到对应测试用例，分析问题并修复。
+
+### 本次 prompt skill 优化记录
+
+| 轮次 | 反馈问题 | 修复方案 | 结果 |
+|------|---------|---------|------|
+| 1 | 指令中将"思维引导"叫 Instructions，用户觉得 workflow 更清晰 | 重命名为 Workflow (工作流程)，更新所有测试用例 | ✓ 完成 |
+| 2 | 旧版本对于已经清晰的需求还过度追问 | 增加判断分支：问题清晰则直接下一步 | ✓ 完成 |
+| 3 | 旧版本会直接执行用户请求的任务，忘记自己本职是优化提示词 | 在规则第一条强化：本 skill 唯一任务是优化提示词，必须得到用户批准才能执行 | ✓ 完成 |
+
+---
+
+## 五、总结
 
 ### 一句话概括
 

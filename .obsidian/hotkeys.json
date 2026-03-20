@@ -78,11 +78,18 @@
       "key": "I"
     }
   ],
+  "outline:open": [
+    {
+      "modifiers": [
+        "Ctrl"
+      ],
+      "key": "L"
+    }
+  ],
   "file-explorer:open": [
     {
       "modifiers": [
-        "Ctrl",
-        "Mod"
+        "Ctrl"
       ],
       "key": "1"
     }

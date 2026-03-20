@@ -1,6 +1,13 @@
 <%*
 // Templater template for skill-creator Benchmark mode
 
+const level = await tp.system.prompt(
+  "Skill 级别：输入 user 表示用户级全局 Skill，输入 project 表示项目级 Skill：",
+  "user",
+  true,
+  {},
+  false
+);
 const skill_name = await tp.system.prompt(
   "要基准测试 Skill 名称：",
   "",
@@ -28,9 +35,10 @@ tR += `
 
 ---
 
-## Skill 名称
+## Skill 信息
 
-${skill_name}
+- **Skill 名称**: \`${skill_name}\`
+- **Skill 级别**: \`${level}\`（user = 用户级全局 Skill，project = 项目级 Skill）
 
 ## 运行次数
 

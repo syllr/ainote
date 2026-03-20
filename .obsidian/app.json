@@ -3,5 +3,6 @@
   "showUnsupportedFiles": true,
   "promptDelete": false,
   "confirmExternalFile": false,
-  "focusNewTab": true
+  "focusNewTab": true,
+  "livePreview": false
 }
