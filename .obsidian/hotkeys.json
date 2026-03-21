@@ -1,14 +1,6 @@
 {
   "terminal:close-terminal": [],
   "terminal:find-in-terminal": [],
-  "app:toggle-right-sidebar": [
-    {
-      "modifiers": [
-        "Mod"
-      ],
-      "key": "R"
-    }
-  ],
   "obsidian-git:open-git-view": [
     {
       "modifiers": [
@@ -26,15 +18,6 @@
     }
   ],
   "editor:insert-link": [],
-  "agent-client:open-chat-view": [
-    {
-      "modifiers": [
-        "Mod",
-        "Shift"
-      ],
-      "key": "/"
-    }
-  ],
   "file-explorer:reveal-active-file": [
     {
       "modifiers": [
@@ -44,14 +27,6 @@
     }
   ],
   "editor:toggle-checklist-status": [],
-  "app:toggle-left-sidebar": [
-    {
-      "modifiers": [
-        "Mod"
-      ],
-      "key": "L"
-    }
-  ],
   "bookmarks:open": [
     {
       "modifiers": [
@@ -59,15 +34,6 @@
         "Shift"
       ],
       "key": "B"
-    }
-  ],
-  "workspace:copy-full-path": [
-    {
-      "modifiers": [
-        "Mod",
-        "Shift"
-      ],
-      "key": "C"
     }
   ],
   "quickadd:choice:7572936a-9892-4cd3-85c7-4cc8fe7aa549": [
@@ -78,7 +44,23 @@
       "key": "I"
     }
   ],
-  "outline:open": [
+  "file-explorer:open": [
+    {
+      "modifiers": [
+        "Ctrl"
+      ],
+      "key": "1"
+    }
+  ],
+  "app:toggle-right-sidebar": [
+    {
+      "modifiers": [
+        "Ctrl"
+      ],
+      "key": "R"
+    }
+  ],
+  "app:toggle-left-sidebar": [
     {
       "modifiers": [
         "Ctrl"
@@ -86,12 +68,27 @@
       "key": "L"
     }
   ],
-  "file-explorer:open": [
+  "outline:open": [
+    {
+      "modifiers": [
+        "Ctrl",
+        "Shift"
+      ],
+      "key": "L"
+    }
+  ],
+  "agent-client:open-chat-view": [
+    {
+      "modifiers": [
+        "Mod"
+      ],
+      "key": "\\"
+    },
     {
       "modifiers": [
         "Ctrl"
       ],
-      "key": "1"
+      "key": "\\"
     }
   ]
 }
