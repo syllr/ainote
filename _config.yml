@@ -24,6 +24,7 @@ exclude:
   - .venv/
   - .DS_Store
   - node_modules/
+  - 00-System/Templates/
   - "*.log"
   - "*.tmp"
 
