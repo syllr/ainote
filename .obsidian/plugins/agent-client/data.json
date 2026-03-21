@@ -55,6 +55,14 @@
   },
   "savedSessions": [
     {
+      "sessionId": "3b93bf08-1bd5-4b2c-b5fa-5ff7d49e1eb4",
+      "agentId": "claude-code-acp",
+      "cwd": "/Users/yutao/ainote",
+      "title": "Jekyll我发现这个对markdown的渲染效果不错诶,我可以在goland里面让goland用这...",
+      "createdAt": "2026-03-21T09:07:06.978Z",
+      "updatedAt": "2026-03-21T09:07:06.979Z"
+    },
+    {
       "sessionId": "78ce4934-1eb1-48f1-9ae8-b797f4075bb7",
       "agentId": "claude-code-acp",
       "cwd": "/Users/yutao/ainote",

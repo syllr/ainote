@@ -16,6 +16,7 @@
     "sh",
     "json",
     "yaml",
+    "yml",
     "txt"
   ],
   "folding": true,
