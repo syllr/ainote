@@ -1,3 +1,8 @@
+---
+layout: default
+hide_metadata: true
+---
+
 # Claude 学习笔记
 
 欢迎来到我的 Claude 学习笔记仓库。
