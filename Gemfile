@@ -12,4 +12,4 @@ gem "github-pages", group: :jekyll_plugins
 gem "jekyll-include-cache"
 
 # PlantUML 支持 - 活跃维护，远程渲染不需要本地 Java
-gem 'jekyll-plantuml', git: 'https://github.com/pattex/jekyll-plantuml', group: :jekyll_plugins
+gem 'jekyll-plantuml', group: :jekyll_plugins
