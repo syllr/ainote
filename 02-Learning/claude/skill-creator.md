@@ -76,6 +76,41 @@ skill-creator 有四种核心工作模式，满足不同阶段需求：
 
 ### 3. 创建第一个 Skill：完整实战
 
+完整创建流程总览：
+
+```plantuml
+@startuml
+skinparam linetype ortho
+skinparam shadowing false
+
+start
+:Step 1: 用户输入需求
+/skill-creator "创建..." ;
+
+:Step 2: skill-creator 提问澄清;
+
+:Step 3: 用户回答问题;
+
+:Step 4: 自动生成代码
+创建目录 + SKILL.md + evals.json ;
+
+:Step 5: 用户完善测试用例
+编辑 evals.json ;
+
+:Step 6: 运行评估
+/skill-creator "run evals" ;
+
+if (测试全部通过?) then (yes)
+  :Step 7: (可选) 优化触发描述;
+  :完成;
+  stop
+else (no)
+  :迭代改进\n/skill-creator "improve...";
+  -> Step 6;
+endif
+@enduml
+```
+
 这里以创建一个"SQL 关键字大写转换"Skill 为例：
 
 #### Step 1：启动创建流程
