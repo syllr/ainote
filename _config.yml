@@ -42,13 +42,11 @@ kramdown:
   input: GFM
   hard_wrap: false
   syntax_highlighter: rouge
-
-# yegor256/jekyll-plantuml 配置 - 远程渲染 PlantUML 图表
-plantuml:
-  # 使用官方 plantuml.com 远程服务，输出 PNG 格式
-  server: "https://www.plantuml.com/plantuml/png/"
-  # 缓存目录
-  cache_dir: "assets/plantuml/"
+  plantuml:
+    # 使用 plantuml.com 远程渲染，输出 PNG 格式，不需要本地安装
+    server_url: https://www.plantuml.com/plantuml/png/
+    format: png
+    raise_errors: false
 
 # 分页
 pagination:
