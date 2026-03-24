@@ -78,8 +78,7 @@ skill-creator 有四种核心工作模式，满足不同阶段需求：
 
 完整创建流程总览：
 
-```plantuml
-@startuml
+{% uml %}
 skinparam linetype ortho
 skinparam shadowing false
 
@@ -104,8 +103,7 @@ else (no)
   :迭代改进\n/skill-creator "improve...";
   -> Step 6;
 endif
-@enduml
-```
+{% enduml %}
 
 这里以创建一个"SQL 关键字大写转换"Skill 为例：
 

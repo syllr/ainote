@@ -14,7 +14,7 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
-  - kramdown-plantuml
+  - jekyll-remote-plantuml
 
 # 处理 Obsidian 特性
 # 忽略 Obsidian 系统目录和私有文件
@@ -42,10 +42,11 @@ kramdown:
   input: GFM
   hard_wrap: false
   syntax_highlighter: rouge
-  plantuml:
-    server_url: https://www.plantuml.com/plantuml/png/
-    format: png
-    dpi: 180
+
+# jekyll-remote-plantuml 配置 - 远程渲染 PlantUML 图表
+plantuml:
+  url: "https://www.plantuml.com/plantuml/png/{code}"
+  assets: "assets/plantuml/"
 
 # 分页
 pagination:
