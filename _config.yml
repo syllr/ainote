@@ -14,7 +14,7 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
-  - jekyll-remote-plantuml
+  - jekyll-plantuml
 
 # 处理 Obsidian 特性
 # 忽略 Obsidian 系统目录和私有文件
@@ -43,10 +43,14 @@ kramdown:
   hard_wrap: false
   syntax_highlighter: rouge
 
-# jekyll-remote-plantuml 配置 - 远程渲染 PlantUML 图表
+# pattex/jekyll-plantuml 配置 - 远程渲染 PlantUML 图表
 plantuml:
-  url: "https://www.plantuml.com/plantuml/png/{code}"
-  assets: "assets/plantuml/"
+  # 使用官方 plantuml.com 远程服务，输出 PNG 格式
+  url: "https://www.plantuml.com/plantuml/png/"
+  # 缓存目录
+  cache: "assets/plantuml/"
+  # 允许使用 ```plantuml 代码块写法
+  markdown_code_block: true
 
 # 分页
 pagination:
