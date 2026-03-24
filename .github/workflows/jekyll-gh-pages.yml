@@ -13,6 +13,10 @@ on:
   # 允许你从 Actions 选项卡手动运行此工作流
   workflow_dispatch:
 
+# 强制所有 JavaScript actions 使用 Node.js 24，消除弃用警告
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # 设置 GITHUB_TOKEN 的权限，允许部署到 GitHub Pages
 permissions:
   contents: read
