@@ -80,7 +80,7 @@ skill-creator 有四种核心工作模式，满足不同阶段需求：
 
 ```plantuml
 @startuml
-skinparam defaultFontName "Noto Sans CJK SC"
+skinparam defaultFontName "DialogInput"
 
 start
 :Step 1: 用户输入需求\n/skill-creator "创建..." ;
@@ -103,12 +103,6 @@ else (no)
   :迭代改进\n/skill-creator "improve...";
   -> Step 6;
 endif
-@enduml
-```
-
-```plantuml
-@startuml
-listfonts
 @enduml
 ```
 
