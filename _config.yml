@@ -14,6 +14,7 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
+  - kramdown-plantuml
 
 # 处理 Obsidian 特性
 # 忽略 Obsidian 系统目录和私有文件
@@ -41,6 +42,9 @@ kramdown:
   input: GFM
   hard_wrap: false
   syntax_highlighter: rouge
+  plantuml:
+    server_url: https://www.plantuml.com/plantuml/svg/
+    format: svg
 
 # 分页
 pagination:

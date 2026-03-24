@@ -10,3 +10,6 @@ gem "github-pages", group: :jekyll_plugins
 
 # 性能优化
 gem "jekyll-include-cache"
+
+# PlantUML 支持
+gem 'kramdown-plantuml', group: :jekyll_plugins
