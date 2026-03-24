@@ -103,6 +103,10 @@ else (no)
   :迭代改进\n/skill-creator "improve...";
   -> Step 6;
 endif
+
+note bottom
+  Font: defaultFontName = "DialogInput"
+end note
 @enduml
 ```
 
