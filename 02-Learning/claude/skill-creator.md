@@ -80,7 +80,9 @@ skill-creator 有四种核心工作模式，满足不同阶段需求：
 
 ```plantuml
 @startuml
-skinparam defaultFontName "DialogInput"
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC,Microsoft YaHei,Noto Sans CJK SC,sans-serif"
 
 start
 :Step 1: 用户输入需求\n/skill-creator "创建..." ;
@@ -104,9 +106,6 @@ else (no)
   -> Step 6;
 endif
 
-note bottom
-  Font: defaultFontName = "DialogInput"
-end note
 @enduml
 ```
 
