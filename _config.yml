@@ -73,7 +73,7 @@ jekyll-spaceship:
   processors:
     - plantuml-processor
   plantuml-processor:
-    mode: default              # 渲染模式：default = 直接链接远程 SVG URL；pre-fetch = 构建时预下载到本地
+    mode: pre-fetch            # 渲染模式：pre-fetch = 构建时预下载 SVG 到本地，后续构建使用缓存，速度更快
     css:
       class: plantuml          # 生成 img 标签的 CSS 类名
     syntax:
