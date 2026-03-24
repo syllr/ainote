@@ -106,7 +106,6 @@ endif
 @enduml
 ```
 
-
 这里以创建一个"SQL 关键字大写转换"Skill 为例：
 
 #### Step 1：启动创建流程
