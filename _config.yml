@@ -43,14 +43,12 @@ kramdown:
   hard_wrap: false
   syntax_highlighter: rouge
 
-# pattex/jekyll-plantuml 配置 - 远程渲染 PlantUML 图表
+# yegor256/jekyll-plantuml 配置 - 远程渲染 PlantUML 图表
 plantuml:
   # 使用官方 plantuml.com 远程服务，输出 PNG 格式
-  url: "https://www.plantuml.com/plantuml/png/"
+  server: "https://www.plantuml.com/plantuml/png/"
   # 缓存目录
-  cache: "assets/plantuml/"
-  # 允许使用 ```plantuml 代码块写法
-  markdown_code_block: true
+  cache_dir: "assets/plantuml/"
 
 # 分页
 pagination:
