@@ -84,21 +84,17 @@ skinparam linetype ortho
 skinparam shadowing false
 
 start
-:Step 1: 用户输入需求
-/skill-creator "创建..." ;
+:Step 1: 用户输入需求\n/skill-creator "创建..." ;
 
 :Step 2: skill-creator 提问澄清;
 
 :Step 3: 用户回答问题;
 
-:Step 4: 自动生成代码
-创建目录 + SKILL.md + evals.json ;
+:Step 4: 自动生成代码\n创建目录 + SKILL.md + evals.json ;
 
-:Step 5: 用户完善测试用例
-编辑 evals.json ;
+:Step 5: 用户完善测试用例\n编辑 evals.json ;
 
-:Step 6: 运行评估
-/skill-creator "run evals" ;
+:Step 6: 运行评估\n/skill-creator "run evals" ;
 
 if (测试全部通过?) then (yes)
   :Step 7: (可选) 优化触发描述;
