@@ -604,14 +604,22 @@ skill-creator 会：
 
 ### 完整流程总结（你刚刚走完的）
 
-```
-用户需求 → skill-creator 初始创建 → 你写测试用例 → 第一轮测试 →
-    ↓
-你在浏览器评审 → 填写反馈 → 下载 feedback.json → skill-creator 读取反馈 →
-    ↓
-skill-creator 修改 SKILL.md → 生成新一轮测试 → 你再次评审 →
-    ↓
-重复直到满意 → （可选）优化触发描述 → 完成
+```mermaid
+flowchart TD
+    A[用户需求] --> B[skill-creator 初始创建]
+    B --> C[你写测试用例]
+    C --> D[第一轮测试]
+    D --> E[你在浏览器评审]
+    E --> F[填写反馈]
+    F --> G[下载 feedback.json]
+    G --> H[skill-creator 读取反馈]
+    H --> I[skill-creator 修改 SKILL.md]
+    I --> J[生成新一轮测试]
+    J --> K[你再次评审]
+    K --> L{重复直到满意?}
+    L -->|否| D
+    L -->|是| M[可选 优化触发描述]
+    M --> N[完成]
 ```
 
 ### 反馈 JSON 格式说明
