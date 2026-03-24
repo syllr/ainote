@@ -43,8 +43,8 @@ kramdown:
   hard_wrap: false
   syntax_highlighter: rouge
   plantuml:
-    server_url: https://www.plantuml.com/plantuml/svg/
-    format: svg
+    server_url: https://www.plantuml.com/plantuml/png/
+    format: png
     dpi: 180
 
 # 分页
