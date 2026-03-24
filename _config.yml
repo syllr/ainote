@@ -14,7 +14,7 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
-  - jekyll-plantuml
+  - jekyll-spaceship
 
 # 处理 Obsidian 特性
 # 忽略 Obsidian 系统目录和私有文件
@@ -64,3 +64,17 @@ defaults:
       path: "**/*.md"
     values:
       layout: default
+
+# jekyll-spaceship - 多功能插件，包含 PlantUML 支持
+jekyll-spaceship:
+  # 只启用 PlantUML 处理器，其他功能不需要
+  processors:
+    - plantuml-processor
+  plantuml-processor:
+    mode: default              # default = 直接链接远程 SVG
+    css:
+      class: plantuml
+    syntax:
+      code: 'plantuml'         # 使用 ```plantuml 语法，去掉感叹号
+      custom: ['@startuml', '@enduml']
+    src: https://www.plantuml.com/plantuml/svg/
