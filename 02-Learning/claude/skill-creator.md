@@ -80,26 +80,28 @@ skill-creator 有四种核心工作模式，满足不同阶段需求：
 
 ```plantuml
 @startuml
+skinparam linetype ortho
+skinparam shadowing false
 
 start
-:Step 1: 用户输入需求\n/skill-creator "创建..." ;
+:Step 1: User enters requirement\n/skill-creator "create..." ;
 
-:Step 2: skill-creator 提问澄清;
+:Step 2: skill-creator asks clarifying questions;
 
-:Step 3: 用户回答问题;
+:Step 3: User answers questions;
 
-:Step 4: 自动生成代码\n创建目录 + SKILL.md + evals.json ;
+:Step 4: Auto-generate code\nCreate dir + SKILL.md + evals.json ;
 
-:Step 5: 用户完善测试用例\n编辑 evals.json ;
+:Step 5: User completes test cases\nEdit evals.json ;
 
-:Step 6: 运行评估\n/skill-creator "run evals" ;
+:Step 6: Run evaluation\n/skill-creator "run evals" ;
 
-if (测试全部通过?) then (yes)
-  :Step 7: (可选) 优化触发描述;
-  :完成;
+if (All tests pass?) then (yes)
+  :Step 7: (Optional) Optimize trigger description;
+  :Done;
   stop
 else (no)
-  :迭代改进\n/skill-creator "improve...";
+  :Iterate improvement\n/skill-creator "improve...";
   -> Step 6;
 endif
 @enduml
