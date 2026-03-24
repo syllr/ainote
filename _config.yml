@@ -45,6 +45,7 @@ kramdown:
   plantuml:
     server_url: https://www.plantuml.com/plantuml/svg/
     format: svg
+    dpi: 180
 
 # 分页
 pagination:
