@@ -16,6 +16,8 @@ Claude Code 有两个层级的配置：
 | **用户全局** | `~/.claude/`     | 你的所有项目都生效，是你个人的配置偏好 |
 | **项目级**  | `项目根目录/.claude/` | 只对当前项目生效，团队共享       |
 
+**优先级**：`企业级配置 > 用户全局 (~/.claude/) > 项目级 (项目/.claude/)`，同名配置优先级高的会覆盖优先级低的。
+
 > **重要结论**（[官方文档](https://code.claude.com/docs/en/best-practices#write-an-effective-claude-md)）：
 >
 >   - `~/.claude/CLAUDE.md` - 全局 CLAUDE.md 放在用户目录的 `.claude/` 下
