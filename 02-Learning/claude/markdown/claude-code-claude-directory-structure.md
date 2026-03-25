@@ -2,7 +2,7 @@
 
 Claude Code 提供了一套完整的项目配置机制，让 AI 能够真正理解你的项目并按照规范工作。很多初学者分不清 `CLAUDE.md`、`rules`、`skills`、`hooks` 各自该什么时候用，本文给你讲清楚。
 
----
+-----
 
 ## 一、整体目录结构
 
@@ -16,13 +16,14 @@ Claude Code 有两个层级的配置：
 | **项目级**   | `项目根目录/.claude/` | 只对当前项目生效，团队共享                     |
 
 > **重要结论**（[官方文档](https://code.claude.com/docs/en/best-practices#write-an-effective-claude-md)）：
-> - `~/.claude/CLAUDE.md` - 全局 CLAUDE.md 放在用户目录的 `.claude/` 下
-> - **`项目/CLAUDE.md`** - 项目级 CLAUDE.md 放在**项目根目录**，**不是**放在 `项目/.claude/CLAUDE.md`
-> - `项目/.claude/` - 只放 `rules/`、`skills/`、`hooks.json` 等项目级配置
+> 
+>   - `~/.claude/CLAUDE.md` - 全局 CLAUDE.md 放在用户目录的 `.claude/` 下
+>   - **`项目/CLAUDE.md`** - 项目级 CLAUDE.md 放在**项目根目录**，**不是**放在 `项目/.claude/CLAUDE.md`
+>   - `项目/.claude/` - 只放 `rules/`、`skills/`、`hooks.json` 等项目级配置
 
 一个典型的项目配置长这样：
 
-```
+``` 
 你的项目/
 ├── CLAUDE.md                      # 项目级全局说明（在项目根目录，不在 .claude 里）
 └── .claude/                       # 项目级配置目录
@@ -38,11 +39,11 @@ Claude Code 有两个层级的配置：
     └── agents/                    # 自定义 subagent 配置（可选）
 ```
 
----
+-----
 
 ## 二、.claude/ 目录下各个文件/目录的作用
 
-### 1. `.claude/rules/` - 编码规范规则
+### 1\. `.claude/rules/` - 编码规范规则
 
 **作用**：存放**局部场景**的编码规范。
 
@@ -55,7 +56,8 @@ Claude Code 有两个层级的配置：
 **示例**：
 
 `rules/react-components.md`：
-```markdown
+
+``` markdown
 # 规则：src/components/ 目录下的 React 组件
 
 - 必须使用函数组件，不推荐使用 class 组件
@@ -65,7 +67,8 @@ Claude Code 有两个层级的配置：
 ```
 
 `rules/sql.md`：
-```markdown
+
+``` markdown
 # 规则：*.sql 文件
 
 - 禁止使用 SELECT *，必须明确列出需要的字段
@@ -74,13 +77,13 @@ Claude Code 有两个层级的配置：
 - 禁止在生产环境使用 DELETE 不带 WHERE 条件
 ```
 
-### 2. `.claude/skills/` - 技能（任务流程）
+### 2\. `.claude/skills/` - 技能（任务流程）
 
 **作用**：定义某类任务的**标准操作流程**，相当于给 Claude 一份「任务说明书」。
 
 **结构**：每个 skill 是一个独立目录，必须包含 `SKILL.md`：
 
-```
+``` 
 .claude/skills/create-api/
 └── SKILL.md           # 必需：skill 定义
 ├── template.hbs        # 可选：模板文件
@@ -89,14 +92,14 @@ Claude Code 有两个层级的配置：
 
 **何时用**：当某类任务有固定的步骤，不希望 AI 临场自由发挥时。比如：
 
-- 创建新 API 接口的流程
-- 调试问题的排查步骤
-- 代码审查的检查清单
-- 发布部署的 checklist
+  - 创建新 API 接口的流程
+  - 调试问题的排查步骤
+  - 代码审查的检查清单
+  - 发布部署的 checklist
 
 **示例**：
 
-```markdown
+``` markdown
 ---
 name: create-api
 description: 创建新的 REST API 接口，遵循项目规范
@@ -134,7 +137,7 @@ skill 支持 YAML frontmatter 配置：
 
 > **官方文档**：<https://code.claude.com/docs/zh-CN/skills>
 
-### 3. `.claude/hooks.json` - 钩子（自动执行）
+### 3\. `.claude/hooks.json` - 钩子（自动执行）
 
 **作用**：在特定事件发生时**自动执行**命令或检查，类似 Git 的 pre-commit hook。
 
@@ -144,7 +147,7 @@ skill 支持 YAML frontmatter 配置：
 
 **示例**：
 
-```json
+``` json
 {
   "hooks": {
     "PostToolUse": [
@@ -184,19 +187,20 @@ skill 支持 YAML frontmatter 配置：
 | `PostToolUse` | 工具执行后 |
 
 最常见的用法：
-- 修改代码后自动跑 lint / typecheck
-- 禁止修改敏感目录（拦住 AI 的修改）
-- 会话开始时自动收集环境信息
 
-### 4. `.claude/keybindings.json` - 自定义键盘快捷键
+  - 修改代码后自动跑 lint / typecheck
+  - 禁止修改敏感目录（拦住 AI 的修改）
+  - 会话开始时自动收集环境信息
+
+### 4\. `.claude/keybindings.json` - 自定义键盘快捷键
 
 **作用**：自定义快捷键绑定，用于终端模式下的快捷操作。
 
-### 5. `.claude/agents/` - 自定义 Subagent
+### 5\. `.claude/agents/` - 自定义 Subagent
 
 **作用**：定义自定义的 subagent 配置，可以让特定任务在隔离的代理上下文中运行。
 
----
+-----
 
 ## 三、根目录的 `CLAUDE.md`
 
@@ -206,21 +210,22 @@ skill 支持 YAML frontmatter 配置：
 
 **适合放**：
 
-- 项目是什么，技术栈是什么
-- 默认构建/测试命令是什么
-- 哪些目录是禁区，不要碰
-- 完成任务前必须做什么检查
-- 全局的编码偏好
-- 合作方式（比如先给计划再动手）
+  - 项目是什么，技术栈是什么
+  - 默认构建/测试命令是什么
+  - 哪些目录是禁区，不要碰
+  - 完成任务前必须做什么检查
+  - 全局的编码偏好
+  - 合作方式（比如先给计划再动手）
 
 **不适合放**：
-- 某个目录专属的细粒度规则（那是 rules 的活）
-- 一整页的项目百科（那是 README 的活）
-- 某类任务的操作步骤（那是 skills 的活）
+
+  - 某个目录专属的细粒度规则（那是 rules 的活）
+  - 一整页的项目百科（那是 README 的活）
+  - 某类任务的操作步骤（那是 skills 的活）
 
 **示例**：
 
-```markdown
+``` markdown
 # CLAUDE.md - 项目合作约定
 
 ## 技术栈
@@ -247,13 +252,13 @@ skill 支持 YAML frontmatter 配置：
 - 类型优先，给所有公共接口添加类型注解
 ```
 
----
+-----
 
 ## 四、全局配置（用户级别） vs 项目配置
 
 除了项目级的 `.claude/`，Claude Code 还有**用户全局配置**，放在你的用户目录下：
 
-```
+``` 
 ~/.claude/
 ├── CLAUDE.md                 # 全局规则，对所有项目生效
 ├── rules/                    # 全局规则
@@ -267,7 +272,7 @@ skill 支持 YAML frontmatter 配置：
 
 **优先级**：`企业级 > 用户全局 > 项目级`，同名 skill 优先级高的覆盖优先级低的。
 
----
+-----
 
 ## 五、什么时候该把信息固化到哪里？判断口诀
 
@@ -282,7 +287,7 @@ skill 支持 YAML frontmatter 配置：
 
 ### 判断流程图
 
-```
+``` 
 是否全局长期成立？
   ├─ 是 → 放 CLAUDE.md
   └─ 否 → 是否只有局部场景才成立？
@@ -294,11 +299,11 @@ skill 支持 YAML frontmatter 配置：
                     └─ 否 → 再想想...
 ```
 
----
+-----
 
 ## 六、完整示例：一个中等项目的配置
 
-```
+``` 
 my-project/
 ├── CLAUDEmd
 │   └── 项目全局约定：技术栈、命令、禁区
@@ -314,25 +319,28 @@ my-project/
         └── 改完 TS 自动 lint，改完 Go 自动 go fmt
 ```
 
----
+-----
 
 ## 七、常见误区
 
 ### 误区 1：把所有东西都塞进 CLAUDE.md
 
 ❌ 错误做法：
-```
+
+``` 
 CLAUDE.md 写了几千字，包含所有目录的所有规则...
 ```
 
 ✅ 正确做法：
-- CLAUDE.md 只放全局原则，保持精简
-- 局部规则分到 `rules/` 下按文件拆分，只在相关场景加载
+
+  - CLAUDE.md 只放全局原则，保持精简
+  - 局部规则分到 `rules/` 下按文件拆分，只在相关场景加载
 
 ### 误区 2：把 skill 写成大段 prompt
 
 ❌ 错误做法：
-```
+
+``` 
 ---
 name: myskill
 description: xxx
@@ -356,7 +364,7 @@ skill 是**流程说明书**，告诉 Claude "做这件事该按什么步骤来"
 
 ✅ 正确：这是任务流程，放 `skills/create-api/SKILL.md`。
 
----
+-----
 
 ## 八、总结
 
