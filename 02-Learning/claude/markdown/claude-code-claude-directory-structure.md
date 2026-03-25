@@ -16,12 +16,14 @@ Claude Code 有两个层级的配置：
 | **用户全局** | `~/.claude/`     | 你的所有项目都生效，是你个人的配置偏好 |
 | **项目级**  | `项目根目录/.claude/` | 只对当前项目生效，团队共享       |
 
-**优先级**：`企业级托管配置 > 用户全局 (~/.claude/) > 项目级 (项目/.claude/)`，同名配置优先级高的会覆盖优先级低的。
+**优先级**（从高到低）：**项目级配置 > 用户全局配置**。
 
-> 说明：**企业级托管配置**是 Claude Code 企业版提供的组织范围统一配置，普通个人用户不会用到。对于个人开发者，实际优先级是：**你的个人全局配置 (`~/.claude/`) > 当前项目配置 (`项目/.claude/`)**。如果个人规则和项目规则冲突，以个人规则为准。
+Claude Code 按加载顺序处理配置冲突，**后加载的配置会覆盖先加载的冲突规则**：
+1. 先加载用户全局配置 (`~/.claude/`)
+2. 再加载项目配置 (`项目根目录/CLAUDE.md` + `项目/.claude/`)
+3. 所以最终**项目配置可以覆盖你的个人全局规则**，适合团队共享统一规范
 
-> **重要结论**（[官方文档](https://code.claude.com/docs/en/best-practices#write-an-effective-claude-md)）：
->
+> **重要结论**（[官方文档](https://code.claude.com/docs/en/best-practices#write-an-effective-claude-md)确认）：
 >   - `~/.claude/CLAUDE.md` - 全局 CLAUDE.md 放在用户目录的 `.claude/` 下
 >   - **`项目/CLAUDE.md`** - 项目级 CLAUDE.md 放在**项目根目录**，**不是**放在 `项目/.claude/CLAUDE.md`
 >   - `项目/.claude/` - 只放 `rules/`、`skills/`、`hooks.json` 等项目级配置
@@ -48,7 +50,7 @@ Claude Code 有两个层级的配置：
 
 ## 二、.claude/ 目录下各个文件/目录的作用
 
-### 1\. `.claude/rules/` - 编码规范规则
+### 1. `.claude/rules/` - 编码规范规则
 
 **作用**：存放**局部场景**的编码规范。
 
@@ -82,7 +84,7 @@ Claude Code 有两个层级的配置：
 - 禁止在生产环境使用 DELETE 不带 WHERE 条件
 ```
 
-### 2\. `.claude/skills/` - 技能（任务流程）
+### 2. `.claude/skills/` - 技能（任务流程）
 
 **作用**：定义某类任务的**标准操作流程**，相当于给 Claude 一份「任务说明书」。
 
@@ -142,7 +144,7 @@ skill 支持 YAML frontmatter 配置：
 
 > **官方文档**：<https://code.claude.com/docs/zh-CN/skills>
 
-### 3\. `.claude/hooks.json` - 钩子（自动执行）
+### 3. `.claude/hooks.json` - 钩子（自动执行）
 
 **作用**：在特定事件发生时**自动执行**命令或检查，类似 Git 的 pre-commit hook。
 
@@ -197,11 +199,11 @@ skill 支持 YAML frontmatter 配置：
 - 禁止修改敏感目录（拦住 AI 的修改）
 - 会话开始时自动收集环境信息
 
-### 4\. `.claude/keybindings.json` - 自定义键盘快捷键
+### 4. `.claude/keybindings.json` - 自定义键盘快捷键
 
 **作用**：自定义快捷键绑定，用于终端模式下的快捷操作。
 
-### 5\. `.claude/agents/` - 自定义 Subagent
+### 5. `.claude/agents/` - 自定义 Subagent
 
 **作用**：定义自定义的 subagent 配置，可以让特定任务在隔离的代理上下文中运行。
 
@@ -275,7 +277,7 @@ skill 支持 YAML frontmatter 配置：
         └── memory/
 ```
 
-**优先级**：`企业级 > 用户全局 > 项目级`，同名 skill 优先级高的覆盖优先级低的。
+**优先级**：`项目级 > 用户全局 > 企业级`，同名 skill 优先级高的覆盖优先级低的。后加载的配置会覆盖先加载的冲突规则。
 
 -----
 
