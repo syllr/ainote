@@ -135,9 +135,10 @@ def ProcessSelectedFile(abs_path: string): void
 
   # Run code2prompt on the file's directory, include only this file
   # code2prompt will generate the prompt and copy to clipboard with -c
+  # -l: output line numbers, --line-numbers: enable line numbers in output
   var target_dir = fnamemodify(abs_path, ':h')
   var file_name = fnamemodify(abs_path, ':t')
-  var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -c 2>&1'
+  var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths -c 2>&1'
   var output = system(cmd)
 
   if v:shell_error != 0
