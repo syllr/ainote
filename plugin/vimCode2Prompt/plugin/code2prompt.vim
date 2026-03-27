@@ -155,43 +155,35 @@ enddef
 # -------------------------------------
 
 def Code2PromptFzf(start_path: string): void
-  # Get exclude patterns from .gitignore
-  var exclude_patterns: list<string> = []
-  var repo_root: string = ''
+  # Build walker-skip list:
+  # 1. Skip all hidden directories (starting with .) - .git, .github, .vscode etc.
+  # 2. Plus common large directories that don't need to be searched
+  var skip_dirs = '*.git,node_modules,target,venv,.venv'
 
-  if IsGitRepository(start_path)
-    if !CheckGit()
-      return
-    endif
-    repo_root = system('git -C ' .. shellescape(start_path) .. ' rev-parse --show-toplevel')->trim()
-    # Read exclude patterns from .gitignore
-    exclude_patterns = ReadGitIgnore(repo_root)
-  endif
-
-  # Build fzf options as a list (fzf.vim expects options to be a list, not a string)
-  # fzf 内置目录遍历，一次性应用所有 exclude 规则
-  # 不用 Vimscript 自己全量遍历，避免大目录卡死
-  # Options must be a list (each element is one argument) for correct merging with fzf.vim defaults
+  # Build fzf options as a list (each option is separate list item - correct format for fzf.vim)
   var fzf_options: list<string> = []
-  # Add walker settings: only files, follow symlinks
-  add(fzf_options, '--walker=file,follow')
-  # Default skip common large directories that don't need to be searched
-  add(fzf_options, '--walker-skip=.git,node_modules,target,venv,.venv')
-  # Add --exclude for each gitignore pattern
-  # Each pattern is a separate argument in the list
-  for pattern in exclude_patterns
-    add(fzf_options, '--exclude')
-    add(fzf_options, pattern)
-  endfor
 
-  # Use fzf.vim built-in file browsing with our exclude patterns
-  # All gitignore exclusives are passed as --exclude directly to fzf
-  # This avoids full directory traversal in Vimscript, won't freeze on large projects
-  call fzf#vim#files(start_path, {
+  # Basic layout
+  add(fzf_options, '--layout=reverse')
+  add(fzf_options, '--info=inline')
+  add(fzf_options, '--height=40%')
+
+  # Walker settings: only list files, follow symlinks, skip configured directories
+  add(fzf_options, '--walker=file,follow')
+  add(fzf_options, '--walker-skip')
+  add(fzf_options, skip_dirs)
+
+  # Custom prompt (each part is separate list item, no quotes needed - fzf.vim escapes automatically)
+  add(fzf_options, '--prompt')
+  add(fzf_options, 'code2prompt > ')
+
+  # Directly use fzf#run with fzf#wrap - let fzf do the directory walking
+  # fzf handles skipping internally, no Vimscript traversal, won't freeze on large projects
+  call fzf#run(fzf#wrap({
+  \ 'cwd': start_path,
   \ 'sink': function('ProcessSelectedFile'),
   \ 'options': fzf_options,
-  \ 'prompt': 'code2prompt > ',
-  \ }, 0)
+  \ }))
 enddef
 
 # -------------------------------------
