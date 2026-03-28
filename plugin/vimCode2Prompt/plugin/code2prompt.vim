@@ -166,38 +166,45 @@ def ProcessSelectedFiles(lines: list<any>): void
     actions = g:fzf_action
   endif
 
-  # When using --expect, first line is the key pressed
-  # len(lines) == 1: Enter pressed, only one line with filename
-  # len(lines) >= 2: first line is key, rest are files
+  # --expect output format: first line is ALWAYS the key pressed
+  # - Empty key ("") means Enter was pressed (normal selection -> process as code2prompt)
+  # - Non-empty key matches our expected bindings (ctrl-t/ctrl-x/ctrl-v) -> open in new tab/split
+  # After first line: the selected filenames
   if len(lines) < 1
     return
   endif
 
-  var first = lines[0]
-  var parts = split(first, '\t')
-  if len(parts) == 2
-    # Has key binding: [key, filename] format
-    var key = parts[0]
-    var abs_path = parts[1]
-    if has_key(actions, key)
-      var cmd = actions[key]
-      # Open in read-only mode with :view command
-      execute cmd .. ' | view ' .. fnameescape(abs_path)
+  # First line is always the key from --expect
+  var key = lines[0]
+
+  if key == ''
+    # Enter pressed (no shortcut key used) - normal selection
+    # Process the file directly with code2prompt
+    if len(lines) < 2
       return
     endif
-  elseif len(lines) == 1
-    # No key binding: normal selection (Enter), process for code2prompt
-    var abs_path = first
+    var abs_path = lines[1]
     ProcessSelectedFile(abs_path)
-  else
-    # Multiple lines: first line is key, open each file
-    var key = lines[0]
-    if has_key(actions, key)
-      var cmd = actions[key]
+    return
+  endif
+
+  # Key is not empty - user pressed one of our shortcut keys (ctrl-t/ctrl-x/ctrl-v)
+  # Open the file(s) in read-only mode
+  if has_key(actions, key)
+    var cmd = actions[key]
+    if len(lines) == 2
+      # Single file
+      var abs_path = lines[1]
+      execute cmd .. ' | view ' .. fnameescape(abs_path)
+    else
+      # Multiple files - first line is key, open each file
       for abs_path in lines[1 : ]
         execute cmd .. ' | view ' .. fnameescape(abs_path)
       endfor
     endif
+  else
+    # Unknown key - fallback: treat first line as filename
+    ProcessSelectedFile(key)
   endif
 enddef
 
