@@ -51,7 +51,7 @@ def IsGitRepository(start_dir: string): bool
   return system('git -C ' .. shellescape(start_dir) .. ' rev-parse --is-inside-work-tree 2>/dev/null') =~ '^true'
 enddef
 
-def ReadGitIgnore(repo_root: string): list<string>
+def ReadGitIgnore(repo_root: string): list<any>
   # Read .gitignore from repository root, extract exclude patterns
   var gitignore_path = repo_root .. '/.gitignore'
   if !filereadable(gitignore_path)
@@ -59,7 +59,7 @@ def ReadGitIgnore(repo_root: string): list<string>
   endif
 
   var lines = readfile(gitignore_path)
-  var patterns: list<string> = []
+  var patterns: list<any> = []
 
   for line in lines
     var trimmed = trim(line)
@@ -78,7 +78,7 @@ def ReadGitIgnore(repo_root: string): list<string>
   return patterns
 enddef
 
-def GetGitFileList(start_dir: string): list<string>
+def GetGitFileList(start_dir: string): list<any>
   # Get repository root
   var repo_root = system('git -C ' .. shellescape(start_dir) .. ' rev-parse --show-toplevel')->trim()
   if repo_root == ''
@@ -90,7 +90,7 @@ def GetGitFileList(start_dir: string): list<string>
   return all_files
 enddef
 
-def GetAllFiles(start_dir: string, depth: number = 10): list<string>
+def GetAllFiles(start_dir: string, depth: number = 10): list<any>
   # Non-git project: recursively find all files from starting directory
   # Limit depth to avoid infinite recursion
   # Skip .git directory to avoid processing thousands of git internal files
@@ -151,6 +151,56 @@ def ProcessSelectedFile(abs_path: string): void
   echohl None
 enddef
 
+# Handle multiple selections with different key bindings (supports Ctrl-T/Ctrl-V/Ctrl-X to open files)
+# When using these shortcut keys, open files in new tab/split instead of processing for code2prompt
+# Files are opened in read-only mode
+def ProcessSelectedFiles(lines: list<any>): void
+  # Get default fzf action mapping from global config
+  var default_action = {
+    'ctrl-t': 'tab split',
+    'ctrl-x': 'split',
+    'ctrl-v': 'vsplit'
+  }
+  var actions = default_action
+  if exists('g:fzf_action')
+    actions = g:fzf_action
+  endif
+
+  # When using --expect, first line is the key pressed
+  # len(lines) == 1: Enter pressed, only one line with filename
+  # len(lines) >= 2: first line is key, rest are files
+  if len(lines) < 1
+    return
+  endif
+
+  var first = lines[0]
+  var parts = split(first, '\t')
+  if len(parts) == 2
+    # Has key binding: [key, filename] format
+    var key = parts[0]
+    var abs_path = parts[1]
+    if has_key(actions, key)
+      var cmd = actions[key]
+      # Open in read-only mode with :view command
+      execute cmd .. ' | view ' .. fnameescape(abs_path)
+      return
+    endif
+  elseif len(lines) == 1
+    # No key binding: normal selection (Enter), process for code2prompt
+    var abs_path = first
+    ProcessSelectedFile(abs_path)
+  else
+    # Multiple lines: first line is key, open each file
+    var key = lines[0]
+    if has_key(actions, key)
+      var cmd = actions[key]
+      for abs_path in lines[1 : ]
+        execute cmd .. ' | view ' .. fnameescape(abs_path)
+      endfor
+    endif
+  endif
+enddef
+
 # -------------------------------------
 # Fzf source for file selection
 # -------------------------------------
@@ -171,7 +221,7 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   endif
 
   # Build fzf options as a list (each option is separate list item - correct format for fzf.vim)
-  var fzf_options: list<string> = []
+  var fzf_options: list<any> = []
 
   # Basic layout
   add(fzf_options, '--layout=reverse')
@@ -182,6 +232,10 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   add(fzf_options, '--walker=file,follow')
   add(fzf_options, '--walker-skip')
   add(fzf_options, skip_dirs)
+
+  # Expect key bindings for Ctrl-T/Ctrl-X/Ctrl-V - enables opening in new tab/split
+  add(fzf_options, '--expect')
+  add(fzf_options, 'ctrl-t,ctrl-x,ctrl-v')
 
   # Custom prompt (each part is separate list item, no quotes needed - fzf.vim escapes automatically)
   if include_hidden
@@ -195,11 +249,12 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   # Directly use fzf#run with fzf#wrap - let fzf do the directory walking
   # fzf handles skipping internally, no Vimscript traversal, won't freeze on large projects
   # Add file preview using fzf#vim#with_preview (same as :Files command)
+  # Use sink* instead of sink to support multiple key bindings (Ctrl-T/Ctrl-V/Ctrl-X)
   var spec = {
-  \ 'cwd': start_path,
-  \ 'sink': function('ProcessSelectedFile'),
-  \ 'options': fzf_options,
-  \ }
+    'cwd': start_path,
+    'sink*': function('ProcessSelectedFiles'),
+    'options': fzf_options
+  }
   # Use fzf.vim's with_preview helper to enable preview window
   # This automatically:
   # - Adds --preview with the preview.sh script that supports bat syntax highlighting
