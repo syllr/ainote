@@ -194,11 +194,20 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
 
   # Directly use fzf#run with fzf#wrap - let fzf do the directory walking
   # fzf handles skipping internally, no Vimscript traversal, won't freeze on large projects
-  call fzf#run(fzf#wrap({
+  # Add file preview using fzf#vim#with_preview (same as :Files command)
+  var spec = {
   \ 'cwd': start_path,
   \ 'sink': function('ProcessSelectedFile'),
   \ 'options': fzf_options,
-  \ }))
+  \ }
+  # Use fzf.vim's with_preview helper to enable preview window
+  # This automatically:
+  # - Adds --preview with the preview.sh script that supports bat syntax highlighting
+  # - Adds --preview-window with default configuration (respects g:fzf_vim.preview_window)
+  # - Adds key binding (ctrl-/) to toggle preview window
+  # - Handles bat detection automatically
+  var wrapped_spec = fzf#vim#with_preview(spec)
+  call fzf#run(wrapped_spec)
 enddef
 
 # -------------------------------------
