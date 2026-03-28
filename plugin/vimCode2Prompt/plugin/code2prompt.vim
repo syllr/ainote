@@ -155,11 +155,20 @@ enddef
 # Fzf source for file selection
 # -------------------------------------
 
-def Code2PromptFzf(start_path: string): void
+def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   # Build walker-skip list:
-  # 1. Skip all hidden directories (starting with .) - .git, .github, .vscode etc.
-  # 2. Plus common large directories that don't need to be searched
-  var skip_dirs = '*.git,node_modules,target,venv,.venv'
+  # Always skip .git (too many internal files) and common large directories
+  # When include_hidden is false (default): also skip all other hidden directories starting with .
+  # When include_hidden is true: only skip .git, show other hidden files/directories
+  var skip_dirs: string
+
+  if include_hidden
+    # Only skip .git and large directories, keep other hidden files
+    skip_dirs = '*.git,node_modules,target,venv,.venv'
+  else
+    # Skip all hidden directories (starting with .) plus common large directories
+    skip_dirs = '.*,*.git,node_modules,target,venv,.venv'
+  endif
 
   # Build fzf options as a list (each option is separate list item - correct format for fzf.vim)
   var fzf_options: list<string> = []
@@ -175,8 +184,13 @@ def Code2PromptFzf(start_path: string): void
   add(fzf_options, skip_dirs)
 
   # Custom prompt (each part is separate list item, no quotes needed - fzf.vim escapes automatically)
-  add(fzf_options, '--prompt')
-  add(fzf_options, 'code2prompt > ')
+  if include_hidden
+    add(fzf_options, '--prompt')
+    add(fzf_options, 'code2prompt (incl. hidden) > ')
+  else
+    add(fzf_options, '--prompt')
+    add(fzf_options, 'code2prompt > ')
+  endif
 
   # Directly use fzf#run with fzf#wrap - let fzf do the directory walking
   # fzf handles skipping internally, no Vimscript traversal, won't freeze on large projects
@@ -225,14 +239,57 @@ def Code2PromptCommand(args: string = ''): void
   # Convert to absolute path
   start_path = fnamemodify(start_path, ':p')
 
-  # Start fzf selection
-  Code2PromptFzf(start_path)
+  # Start fzf selection (exclude hidden files, default behavior)
+  Code2PromptFzf(start_path, false)
+enddef
+
+def Code2PromptWithHiddenFileCommand(args: string = ''): void
+  # Check all dependencies first
+  if !CheckCode2prompt()
+    return
+  endif
+  if !CheckFzf()
+    return
+  endif
+
+  # Determine starting path
+  var start_path: string
+
+  if args != ''
+    # User provided path argument
+    start_path = expand(args)
+  else
+    # Default: current working directory
+    start_path = getcwd()
+  endif
+
+  # Normalize path to absolute
+  if !isdirectory(expand(start_path))
+    if filereadable(expand(start_path))
+      # If it's a file, use its directory
+      start_path = fnamemodify(start_path, ':h')
+    else
+      echoerr 'code2prompt: path not found: ' .. start_path
+      return
+    endif
+  endif
+
+  # Convert to absolute path
+  start_path = fnamemodify(start_path, ':p')
+
+  # Start fzf selection (include hidden files, except .git)
+  Code2PromptFzf(start_path, true)
 enddef
 
 # Create the user command (must start with uppercase per Vim rules)
 command! -nargs=* Code2Prompt :call Code2PromptCommand(<q-args>)
 # Allow lowercase :code2prompt via abbreviation
 cabbrev code2prompt Code2Prompt
+
+# Create the command that includes hidden files (except .git)
+command! -nargs=* Code2PromptWithHiddenFile :call Code2PromptWithHiddenFileCommand(<q-args>)
+# Allow lowercase via abbreviation (use underscore instead of hyphen - cabbrev doesn't work well with hyphen)
+cabbrev code2prompt_with_hidden Code2PromptWithHiddenFile
 
 # -------------------------------------
 # End of plugin

@@ -100,6 +100,25 @@ You can specify a starting path:
 
 This will search for files only within that directory.
 
+### Include hidden files (except .git)
+
+To include hidden files and directories (those starting with `.`) but **always skip `.git`** for performance:
+
+```vim
+:code2prompt_with_hidden
+```
+
+Or use the full command name:
+
+```vim
+:Code2PromptWithHiddenFile
+```
+
+This variant:
+- Shows all hidden files/directories (`.github`, `.vscode`, `.gitignore` etc.)
+- **Still skips `.git`** directory to avoid processing thousands of Git internal files
+- **Still skips large directories**: `node_modules`, `target`, `venv`, `.venv`
+
 ## Features
 
 - ✅ Automatic dependency checking - clear error if code2prompt or fzf not found
