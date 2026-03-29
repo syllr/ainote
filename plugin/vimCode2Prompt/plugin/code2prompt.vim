@@ -68,18 +68,33 @@ enddef
 # 追加内容行到文件末尾
 # 智能判断：如果文件已有非空内容，先加空行再追加
 def AppendToFileEnd(content_lines: list<string>): void
-  # 如果文件为空，从第一行开始插入
-  # 因为 append() 是在指定行后添加，所以从后往前插入保持顺序
   var last_line = line('$')
-  if last_line > 0 && trim(getline('$')) != ''
-    # 文件已有内容，追加前添加空行
+
+  # 检查文件是否已经有非空内容
+  # 只有当文件完全空（0行或所有行都是空白）才认为是空文件
+  var has_content = false
+  # 遍历从第一行到最后一行，只要有一行非空白就说明文件有内容
+  # 如果 last_line == 0，range(1, 0) 返回空列表，循环不执行
+  for i in range(1, last_line)
+    if trim(getline(i)) != ''
+      has_content = true
+      break
+    endif
+  endfor
+
+  if has_content
+    # 文件已有非空内容，追加到末尾前先加空行分隔
     call append('$', '')
     for line in content_lines
       call append('$', line)
     endfor
   else
-    # 文件是空的，从第一行开始插入
-    for i in range(len(content_lines) - 1, 0, -1)
+    # 文件完全空，从第一行开始插入
+    # 因为 append() 是在指定行后添加，所以从后往前插入保持顺序
+    if len(content_lines) == 0
+      return
+    endif
+    for i in range(len(content_lines) - 1, -1, -1)
       call append(0, content_lines[i])
     endfor
   endif
@@ -166,29 +181,28 @@ def ProcessSelectedFile(abs_path: string): void
   var output_lines = split(clipboard_content, '\n', 1)
   var display_path = fnamemodify(abs_path, ':~')
 
-  # 尝试追加到全局源文件（当通过 Ctrl-T/Ctrl-V/Ctrl-X 打开文件选择后会有源文件）
-  if AppendToOriginFile(output_lines, display_path)
-    return
+  # 如果全局已经有源文件（通过 Ctrl-T/Ctrl-V/Ctrl-X 打开新文件后保存的源文件
+  if g:code2prompt_origin_file != ''
+    if AppendToOriginFile(output_lines, display_path)
+      return
+    endif
   endif
 
-  # 没有存储的源文件 - 当前缓冲区就是源文件
-  # 这就是用户在 fzf 中直接按 Enter 选择的场景
-  var current_buf_file = expand('%:p')
-  if current_buf_file != '' && filereadable(current_buf_file) && filewritable(current_buf_file)
-    # 当前缓冲区就是目标文件，直接追加
-    var winview = winsaveview()
+  # 没有全局源文件 - 当前文件就是目标文件，直接追加到末尾
+  # 这就是用户直接在当前文件调用 :code2prompt 选择文件的场景
+  # 逻辑和 AppendToOriginFile 完全一致
+  if filereadable(expand('%:p')) && filewritable(expand('%:p'))
     normal! G$
     AppendToFileEnd(output_lines)
     silent write
-    winrestview(winview)
 
     echohl InfoMsg
-    echo 'code2prompt: ' .. display_path .. ' 已追加到当前文件'
+    echo 'code2prompt: ' .. display_path .. ' 已追加到当前文件末尾'
     echohl None
     return
   endif
 
-  # 没有有效的源文件 - 回退到只复制到剪贴板
+  # 当前文件不可写 - 回退到只复制到剪贴板
   CopyToClipboard(output_lines)
   echohl InfoMsg
   echo 'code2prompt: 内容已复制到系统剪贴板来自 ' .. display_path
