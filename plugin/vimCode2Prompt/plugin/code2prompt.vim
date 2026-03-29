@@ -307,8 +307,10 @@ enddef
 
 def Code2PromptCommand(line1: number, line2: number, args: string = ''): void
   # Check if there is an active visual selection
-  # line1 != line2 means user has selected text in visual mode
-  if line1 != line2
+  # When using :'<,'>command from visual mode, line1 and line2 are always set
+  # Even for single-line selection, line1 == line2 but we still have a selection
+  # Check visualmode() to confirm we came from visual mode
+  if visualmode() != ''
     # User has visually selected text - process selection with code2prompt
     Code2PromptProcessSelection(line1, line2)
     return
@@ -354,12 +356,6 @@ enddef
 
 # Process visually selected text - directly append to origin file with source info
 def Code2PromptProcessSelection(line1: number, line2: number): void
-  # Check if we have a valid origin file (where code2prompt was originally invoked)
-  if g:code2prompt_origin_file == '' || !filereadable(g:code2prompt_origin_file)
-    echoerr 'code2prompt: no valid origin file to append to. Please invoke :code2prompt from the origin file first.'
-    return
-  endif
-
   # line1 and line2 already passed from command
 
   # Get the selected text
@@ -391,37 +387,68 @@ def Code2PromptProcessSelection(line1: number, line2: number): void
   add(content_lines, '```')
   add(content_lines, '')
 
-  # Append the content to the END of origin file
-  # Open origin file in the background, append, save, close
-  # We do this silently to avoid disrupting user
-  var origin_buf = bufadd(g:code2prompt_origin_file)
-  if origin_buf < 0
-    echoerr 'code2prompt: cannot open origin file: ' .. g:code2prompt_origin_file
+  # Check if we have a valid origin file to append to
+  if g:code2prompt_origin_file != '' && filereadable(g:code2prompt_origin_file)
+    # Branch 1: have valid origin file - append to the END of origin file
+    # Open origin file in the background, append, save, close
+    # We do this silently to avoid disrupting user
+    var origin_buf = bufadd(g:code2prompt_origin_file)
+    if origin_buf < 0
+      echoerr 'code2prompt: cannot open origin file: ' .. g:code2prompt_origin_file
+      g:code2prompt_origin_file = ''
+      return
+    endif
+
+    # Keep the original window view
+    var winview = winsaveview()
+    silent exe 'buffer ' .. origin_buf
+    normal! G$
+    # Append each content line at the end
+    for line in content_lines
+      call append('$', line)
+    endfor
+    silent write
+    winrestview(winview)
+
+    # Clear the origin file - this is one-time use only
+    var origin_path = g:code2prompt_origin_file
     g:code2prompt_origin_file = ''
+
+    echohl InfoMsg
+    echo 'code2prompt: selected ' .. display_path .. ' lines ' .. string(line1) .. '-' .. string(line2) .. ' appended to ' .. fnamemodify(origin_path, ':~')
+    echohl None
+  else
+    # Branch 2: no origin file - copy formatted content to system clipboard
+    # Join all lines into single string
+    var full_content = join(content_lines, "\n")
+
+    # Copy to clipboard based on OS
+    if has('macunix')
+      # macOS: use pbcopy
+      call system('pbcopy', split(full_content, "\n"))
+    else
+      # Linux: use xclip
+      call system('xclip -selection clipboard', split(full_content, "\n"))
+    endif
+
+    echohl InfoMsg
+    echo 'code2prompt: selected ' .. display_path .. ' lines ' .. string(line1) .. '-' .. string(line2) .. ' copied to clipboard'
+    echohl None
+  endif
+enddef
+
+def Code2PromptWithHiddenFileCommand(line1: number, line2: number, args: string = ''): void
+  # Check if there is an active visual selection
+  # When using :'<,'>command from visual mode, line1 and line2 are always set
+  # Even for single-line selection, line1 == line2 but we still have a selection
+  # Check visualmode() to confirm we came from visual mode
+  if visualmode() != ''
+    # User has visually selected text - process selection with code2prompt
+    Code2PromptProcessSelection(line1, line2)
     return
   endif
 
-  # Keep the original window view
-  var winview = winsaveview()
-  silent exe 'buffer ' .. origin_buf
-  normal! G$
-  # Append each content line at the end
-  for line in content_lines
-    call append('$', line)
-  endfor
-  silent write
-  winrestview(winview)
-
-  # Clear the origin file - this is one-time use only
-  var origin_path = g:code2prompt_origin_file
-  g:code2prompt_origin_file = ''
-
-  echohl InfoMsg
-  echo 'code2prompt: selected ' .. display_path .. ' lines ' .. string(line1) .. '-' .. string(line2) .. ' appended to ' .. fnamemodify(origin_path, ':~')
-  echohl None
-enddef
-
-def Code2PromptWithHiddenFileCommand(args: string = ''): void
+  # NO selection - continue with original logic
   # Check all dependencies first
   if !CheckCode2prompt()
     return
@@ -466,7 +493,8 @@ command! -range -nargs=* Code2Prompt :call Code2PromptCommand(<line1>, <line2>, 
 cabbrev code2prompt Code2Prompt
 
 # Create the command that includes hidden files (except .git)
-command! -nargs=* Code2PromptWithHiddenFile :call Code2PromptWithHiddenFileCommand(<q-args>)
+# -range: allow visual selection, passes <line1> <line2>
+command! -range -nargs=* Code2PromptWithHiddenFile :call Code2PromptWithHiddenFileCommand(<line1>, <line2>, <q-args>)
 # Allow lowercase via abbreviation (use underscore instead of hyphen - cabbrev doesn't work well with hyphen)
 cabbrev code2prompt_with_hidden Code2PromptWithHiddenFile
 
