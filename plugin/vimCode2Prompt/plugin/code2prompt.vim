@@ -498,5 +498,131 @@ command! -range -nargs=* Code2PromptWithHiddenFile :call Code2PromptWithHiddenFi
 cabbrev code2prompt_with_hidden Code2PromptWithHiddenFile
 
 # -------------------------------------
+# Claude Code external editor auto-detection
+# -------------------------------------
+
+# Auto-detect Claude Code temporary file and handle @ notation on Vim startup
+# This only triggers when:
+# 1. Vim is started with exactly one file (the Claude temporary file)
+# 2. The file contains exactly one line
+# 3. The line starts with @ (Claude Code file selection format)
+def HandleClaudeCodeStartup(): void
+  # Only run when:
+  # - Only one buffer is open (Vim started directly to edit this file)
+  # - File has exactly one line
+  # - Line starts with @
+  if len(getbufinfo({'buflisted': 1})) != 1
+    return
+  endif
+
+  var lines = getline(1, '$')
+  if len(lines) != 1
+    return
+  endif
+
+  var content = trim(lines[0])
+  if len(content) == 0 || content[0] != '@'
+    return
+  endif
+
+  # Extract the path part after @
+  var path_part = trim(content[1 : ])
+  var current_file = expand('%:p')
+
+  if path_part == ''
+    # Case 1: just @ - directly open code2Prompt selection box
+    echohl InfoMsg
+    echo 'code2prompt: Detected empty @ notation, opening file selector...'
+    echohl None
+    # Defer the command execution after Vim startup completes
+    # Use execute from timer callback without lambda
+    def OpenCode2Prompt(timer: number): void
+      execute('Code2Prompt')
+    enddef
+    timer_start(10, OpenCode2Prompt)
+    return
+  endif
+
+  # The path is relative to project root (current working directory)
+  # Because Claude Code starts from project root
+  var abs_path = fnamemodify(path_part, ':p')
+
+  if isdirectory(abs_path)
+    # Case 2: @directory/ - process entire directory
+    echohl InfoMsg
+    echo 'code2prompt: Processing directory: ' .. path_part
+    echohl None
+
+    var target_dir = abs_path
+    # For directory: we need to include all files inside it
+    # Use code2prompt directly on the directory
+    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' -l --absolute-paths 2>&1'
+    var output = system(cmd)
+
+    if v:shell_error != 0
+      echoerr 'code2prompt: command failed with error: ' .. output
+      return
+    endif
+
+    # Split output into lines and append to current file
+    var output_lines = split(output, '\n', 1)
+    if len(output_lines) > 0
+      # Open current buffer, append output at end
+      var insert_lines: list<string> = ['']
+      extend(insert_lines, output_lines)
+      call append('$', insert_lines)
+      silent write
+
+      echohl InfoMsg
+      echo 'code2prompt: Directory ' .. path_part .. ' content appended to current file'
+      echohl None
+    endif
+  elseif filereadable(abs_path)
+    # Case 3: @file/path - single file, use existing processing
+    echohl InfoMsg
+    echo 'code2prompt: Processing file: ' .. path_part
+    echohl None
+
+    # Get the code2prompt output for this single file
+    var target_dir = fnamemodify(abs_path, ':h')
+    var file_name = fnamemodify(abs_path, ':t')
+    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths 2>&1'
+    var output = system(cmd)
+
+    if v:shell_error != 0
+      echoerr 'code2prompt: command failed with error: ' .. output
+      return
+    endif
+
+    # Split output into lines and append to current file
+    var output_lines = split(output, '\n', 1)
+    if len(output_lines) > 0
+      # Append to current file after the original line
+      # Add empty line first, then append all output lines
+      var insert_lines: list<string> = ['']
+      extend(insert_lines, output_lines)
+      call append(1, insert_lines)
+      silent write
+
+      echohl InfoMsg
+      echo 'code2prompt: File ' .. path_part .. ' content appended to current file'
+      echohl None
+    endif
+  else
+    # Path not found - do nothing, let user edit manually
+    echohl WarningMsg
+    echo 'code2prompt: Path not found: ' .. abs_path .. ' - leaving as-is'
+    echohl None
+  endif
+enddef
+
+# Auto command to run detection on Vim startup
+augroup Code2PromptClaudeDetection
+  autocmd!
+  # Run after Vim completes startup and buffer is loaded
+  autocmd VimEnter * ++once call HandleClaudeCodeStartup()
+augroup END
+
+# -------------------------------------
 # End of plugin
 # -------------------------------------
