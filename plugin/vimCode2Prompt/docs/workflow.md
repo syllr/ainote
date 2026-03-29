@@ -239,9 +239,14 @@ if (g:code2prompt_origin_file 存在可读?) then (是)
   :切换到源文件缓冲区\n跳到末尾;
   :逐行追加格式化内容\n保存;
   :提示成功\n清空 g:code2prompt_origin_file;
+  if (可视模式 && 多个标签页?) then (是)
+    :自动关闭当前选中文件的标签页;
+    :直接回到源文件标签页;
+  else (否)
+  endif
   stop
 else (否)
-  :合并内容\n复制到系统剪贴板;
+  :合并内容\n复制到系统剪贴board;
   :提示成功;
   stop
 endif

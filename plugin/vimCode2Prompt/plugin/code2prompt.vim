@@ -108,7 +108,8 @@ enddef
 
 # 将内容追加到源文件（公共逻辑）
 # 返回 true 表示成功追加，false 表示失败（需要回退到复制到剪贴板）
-def AppendToOriginFile(content_lines: list<string>, display_path: string = ''): bool
+# is_visual: 是否来自可视模式调用（只有这种情况才自动关闭当前标签页）
+def AppendToOriginFile(content_lines: list<string>, display_path: string = '', is_visual: bool = false): bool
   # 检查全局是否有有效的源文件路径
   if g:code2prompt_origin_file == ''
     return false
@@ -124,22 +125,28 @@ def AppendToOriginFile(content_lines: list<string>, display_path: string = ''): 
     return false
   endif
 
-  # 记住当前缓冲区，切换到源文件缓冲区进行修改
-  # 修改完成后切回当前缓冲区，用户完全不会感觉到切换
+  # 记住当前缓冲区/当前标签页（就是你正在选中文本的这个新标签页）
+  # 如果是可视模式调用，追加完成后会关闭它
   var current_buf = bufnr('%')
-  var winview = winsaveview()
+  var current_tab = tabpagenr()
 
   # 切换到源文件缓冲区，总是跳到文件末尾再追加
   silent exe 'buffer ' .. origin_buf
+  var winview = winsaveview()
   normal! G$
 
   # 使用统一逻辑追加内容到文件末尾
   AppendToFileEnd(content_lines)
 
   silent write
-  # 切回原来的缓冲区，恢复原来的光标位置
-  silent exe 'buffer ' .. current_buf
-  winrestview(winview)
+
+  # 【优化】自动关闭原来选中文件的那个标签页
+  # 两个条件都满足才关闭：
+  # 1. 必须是可视模式调用（说明用户选中了内容要追加回去）
+  # 2. 必须有多个标签页（避免只剩一个标签页时关闭导致vim退出）
+  if is_visual && tabpagenr('$') > 1
+    silent exe 'tabclose ' .. current_tab
+  endif
 
   # 清空源文件路径 - 一次性使用
   var origin_path = g:code2prompt_origin_file
@@ -444,7 +451,7 @@ def Code2PromptProcessSelection(line1: number, line2: number): void
 
   # 尝试追加到全局源文件（当通过 Ctrl-T/Ctrl-V/Ctrl-X 打开文件选择后会有源文件）
   var msg_suffix = '选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2)
-  if AppendToOriginFile(content_lines, msg_suffix)
+  if AppendToOriginFile(content_lines, msg_suffix, true)
     return
   endif
 
