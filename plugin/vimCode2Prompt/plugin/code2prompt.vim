@@ -529,6 +529,11 @@ def HandleClaudeCodeStartup(): void
   var path_part = trim(content[1 : ])
   var current_file = expand('%:p')
 
+  # Clear the original line (user requested: empty file first before processing)
+  # Delete all content (we already know it's only one line)
+  call deletebufline('', 1, '$')
+  silent write  # Save empty state first before proceeding
+
   if path_part == ''
     # Case 1: just @ - directly open code2Prompt selection box
     echohl InfoMsg
@@ -540,6 +545,7 @@ def HandleClaudeCodeStartup(): void
       execute('Code2Prompt')
     enddef
     timer_start(10, OpenCode2Prompt)
+    silent write
     return
   endif
 
@@ -567,14 +573,12 @@ def HandleClaudeCodeStartup(): void
     # Split output into lines and append to current file
     var output_lines = split(output, '\n', 1)
     if len(output_lines) > 0
-      # Open current buffer, append output at end
-      var insert_lines: list<string> = ['']
-      extend(insert_lines, output_lines)
-      call append('$', insert_lines)
+      # Append all output lines starting from line 1 (buffer is already empty)
+      call append(0, output_lines)
       silent write
 
       echohl InfoMsg
-      echo 'code2prompt: Directory ' .. path_part .. ' content appended to current file'
+      echo 'code2prompt: Directory ' .. path_part .. ' content inserted to current file'
       echohl None
     endif
   elseif filereadable(abs_path)
@@ -597,15 +601,12 @@ def HandleClaudeCodeStartup(): void
     # Split output into lines and append to current file
     var output_lines = split(output, '\n', 1)
     if len(output_lines) > 0
-      # Append to current file after the original line
-      # Add empty line first, then append all output lines
-      var insert_lines: list<string> = ['']
-      extend(insert_lines, output_lines)
-      call append(1, insert_lines)
+      # Append all output lines starting from line 1 (buffer is already empty)
+      call append(0, output_lines)
       silent write
 
       echohl InfoMsg
-      echo 'code2prompt: File ' .. path_part .. ' content appended to current file'
+      echo 'code2prompt: File ' .. path_part .. ' content inserted to current file'
       echohl None
     endif
   else
