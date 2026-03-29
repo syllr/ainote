@@ -264,13 +264,9 @@ def ProcessSelectedFiles(lines: list<any>): void
   if has_key(actions, key)
     var cmd = actions[key]
     if key == 'ctrl-t' && len(lines) == 2
-      # Ctrl-T 单个文件: 打开前记住原始标签页编号
-      var origin_tab = tabpagenr()
+      # Ctrl-T 单个文件: 直接在新标签页打开
       var abs_path = lines[1]
       execute cmd .. ' | view ' .. fnameescape(abs_path)
-      # 现在我们在新标签页了，先保存原始标签页再关闭
-      silent! write
-      execute 'silent! tabclose ' .. origin_tab
     else
       # 多个文件或 Ctrl-X/Ctrl-V 分割: 正常打开
       if len(lines) == 2
