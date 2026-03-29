@@ -10,6 +10,11 @@ if exists('g:loaded_code2prompt')
 endif
 g:loaded_code2prompt = 1
 
+# Store the origin file path where code2prompt was originally invoked from
+# When you open a new file via Ctrl-T/Ctrl-V/Ctrl-X, we remember where you came from
+# After appending selected content to origin file, we clear it
+g:code2prompt_origin_file = ''
+
 # -------------------------------------
 # Check dependencies
 # -------------------------------------
@@ -189,18 +194,35 @@ def ProcessSelectedFiles(lines: list<any>): void
   endif
 
   # Key is not empty - user pressed one of our shortcut keys (ctrl-t/ctrl-x/ctrl-v)
+  # Save the current file (where code2prompt was invoked) as origin file
+  # We will append selected content back to this origin file later
+  var current_origin = expand('%:p')
+  if current_origin != '' && filereadable(current_origin)
+    g:code2prompt_origin_file = current_origin
+  endif
+
   # Open the file(s) in read-only mode
   if has_key(actions, key)
     var cmd = actions[key]
-    if len(lines) == 2
-      # Single file
+    if key == 'ctrl-t' && len(lines) == 2
+      # For Ctrl-T single file: remember original tab number before opening
+      var origin_tab = tabpagenr()
       var abs_path = lines[1]
       execute cmd .. ' | view ' .. fnameescape(abs_path)
+      # Close the original origin tab now that we're in new tab
+      execute 'silent tabclose ' .. origin_tab
     else
-      # Multiple files - first line is key, open each file
-      for abs_path in lines[1 : ]
+      # Multiple files or Ctrl-X/Ctrl-V split: normal opening
+      if len(lines) == 2
+        # Single file
+        var abs_path = lines[1]
         execute cmd .. ' | view ' .. fnameescape(abs_path)
-      endfor
+      else
+        # Multiple files - first line is key, open each file
+        for abs_path in lines[1 : ]
+          execute cmd .. ' | view ' .. fnameescape(abs_path)
+        endfor
+      endif
     endif
   else
     # Unknown key - fallback: treat first line as filename
@@ -323,10 +345,11 @@ def Code2PromptCommand(line1: number, line2: number, args: string = ''): void
   Code2PromptFzf(start_path, false)
 enddef
 
-# Process visually selected text - generate code2prompt prompt with filename and line numbers
+# Process visually selected text - directly append to origin file with source info
 def Code2PromptProcessSelection(line1: number, line2: number): void
-  # Check dependencies
-  if !CheckCode2prompt()
+  # Check if we have a valid origin file (where code2prompt was originally invoked)
+  if g:code2prompt_origin_file == '' || !filereadable(g:code2prompt_origin_file)
+    echoerr 'code2prompt: no valid origin file to append to. Please invoke :code2prompt from the origin file first.'
     return
   endif
 
@@ -339,36 +362,55 @@ def Code2PromptProcessSelection(line1: number, line2: number): void
     return
   endif
 
-  # Get current file absolute path
-  var abs_path = expand('%:p')
-  if abs_path == ''
-    echoerr 'code2prompt: no file name'
+  # Get current file absolute path (the file where selection was made)
+  var current_file = expand('%:p')
+  if current_file == ''
+    echoerr 'code2prompt: cannot get current file name'
     return
   endif
 
-  var rel_path = fnamemodify(abs_path, ':~')
-  var target_dir = fnamemodify(abs_path, ':h')
+  # Use tilde path for display
+  var display_path = fnamemodify(current_file, ':~')
 
-  # Create temp file with the selected text only
-  var temp_dir = $TMPDIR != '' ? $TMPDIR : '/tmp'
-  var temp_file = temp_dir .. '/code2prompt-selection-' .. getpid() .. '.tmp'
-  call writefile(selected_lines, temp_file)
+  # Prepend source header: file path with line range outside code block
+  var content_lines: list<string> = []
+  add(content_lines, '')
+  add(content_lines, 'File: ' .. display_path .. ' (lines: ' .. string(line1) .. '-' .. string(line2) .. ')')
+  add(content_lines, '```')
+  # Add the selected lines as-is, keep original indentation
+  for line in selected_lines
+    add(content_lines, line)
+  endfor
+  add(content_lines, '```')
+  add(content_lines, '')
 
-  # Run code2prompt on temp file
-  # code2prompt will generate the prompt and copy to system clipboard automatically with -c
-  var cmd = 'code2prompt ' .. shellescape(fnamemodify(temp_file, ':h')) .. ' --include ' .. shellescape(fnamemodify(temp_file, ':t')) .. ' -l --absolute-paths -c 2>&1'
-  var output = system(cmd)
-
-  # Cleanup temp file
-  call delete(temp_file)
-
-  if v:shell_error != 0
-    echoerr 'code2prompt: command failed: ' .. output
+  # Append the content to the END of origin file
+  # Open origin file in the background, append, save, close
+  # We do this silently to avoid disrupting user
+  var origin_buf = bufadd(g:code2prompt_origin_file)
+  if origin_buf < 0
+    echoerr 'code2prompt: cannot open origin file: ' .. g:code2prompt_origin_file
+    g:code2prompt_origin_file = ''
     return
   endif
+
+  # Keep the original window view
+  var winview = winsaveview()
+  silent exe 'buffer ' .. origin_buf
+  normal! G$
+  # Append each content line at the end
+  for line in content_lines
+    call append('$', line)
+  endfor
+  silent write
+  winrestview(winview)
+
+  # Clear the origin file - this is one-time use only
+  var origin_path = g:code2prompt_origin_file
+  g:code2prompt_origin_file = ''
 
   echohl InfoMsg
-  echo 'code2prompt: selected text from ' .. rel_path .. ':' .. line1 .. '-' .. line2 .. ' → copied to clipboard'
+  echo 'code2prompt: selected ' .. display_path .. ' lines ' .. string(line1) .. '-' .. string(line2) .. ' appended to ' .. fnamemodify(origin_path, ':~')
   echohl None
 enddef
 
