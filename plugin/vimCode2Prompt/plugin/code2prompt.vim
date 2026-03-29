@@ -242,11 +242,13 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   var skip_dirs: string
 
   if include_hidden
-    # Only skip .git and large directories, keep other hidden files
-    skip_dirs = '*.git,node_modules,target,venv,.venv'
+    # Only skip .git directory and common large project directories (by basename)
+    # Keep ALL OTHER hidden files/directories (including .claude, .gitignore, etc.)
+    skip_dirs = '.git,node_modules,target,venv,.venv'
   else
-    # Skip all hidden directories (starting with .) plus common large directories
-    skip_dirs = '.*,*.git,node_modules,target,venv,.venv'
+    # Skip ALL hidden directories starting with . plus common large directories
+    # .* matches any hidden file/directory starting with dot
+    skip_dirs = '.*,.git,node_modules,target,venv,.venv'
   endif
 
   # Build fzf options as a list (each option is separate list item - correct format for fzf.vim)
@@ -258,7 +260,12 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   add(fzf_options, '--height=40%')
 
   # Walker settings: only list files, follow symlinks, skip configured directories
-  add(fzf_options, '--walker=file,follow')
+  # Add 'hidden' to walker when include_hidden is true - enables showing hidden files/directories
+  if include_hidden
+    add(fzf_options, '--walker=file,follow,hidden')
+  else
+    add(fzf_options, '--walker=file,follow')
+  endif
   add(fzf_options, '--walker-skip')
   add(fzf_options, skip_dirs)
 
