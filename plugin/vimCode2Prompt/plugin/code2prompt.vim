@@ -522,7 +522,12 @@ def HandleClaudeCodeStartup(): void
   # - 只有一个缓冲区打开（Vim 直接启动编辑这个文件）
   # - 文件恰好只有一行
   # - 行以 @ 开头
+  # - 文件可写（跳过 ctrl-t 打开的只读文件）
   if len(getbufinfo({'buflisted': 1})) != 1
+    return
+  endif
+
+  if !filewritable(expand('%:p'))
     return
   endif
 
@@ -543,20 +548,16 @@ def HandleClaudeCodeStartup(): void
   # 清空原始行（用户要求: 处理前先清空文件）
   # 删除所有内容（我们已经知道只有一行）
   call deletebufline('', 1, '$')
-  silent write  # 先保存空状态再继续
+  silent! write  # 先保存空状态再继续
 
   if path_part == ''
     # 情况 1: 仅仅 @ - 直接打开 code2Prompt 选择框
     echohl InfoMsg
     echo 'code2prompt: 检测到空 @ 语法，打开文件选择器...'
     echohl None
-    # 延迟执行命令让 Vim 启动完成
-    # 不用 lambda，使用定时器回调中直接 execute
-    def OpenCode2Prompt(timer: number): void
-      execute('Code2Prompt')
-    enddef
-    timer_start(10, OpenCode2Prompt)
-    silent write
+    # 直接执行打开文件选择器
+    execute('Code2Prompt')
+    silent! write
     return
   endif
 

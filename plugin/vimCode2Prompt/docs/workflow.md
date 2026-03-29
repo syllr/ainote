@@ -7,7 +7,7 @@ flowchart TD
     A[Vim 启动] --> B{是否 Claude Code 自动检测?}
     B -->|"是 - VimEnter 只打开一个文件，单行 @ 开头"| C[提取 @ 后路径部分]
     C --> D{路径是否为空?}
-    D -->|是 - 仅 @| E[清空文件 → 延迟执行 :Code2Prompt]
+    D -->|是 - 仅 @| E[清空文件 → 直接执行 :Code2Prompt]
     D -->|否| F{路径是否为目录?}
     F -->|是 - @dir/| G[直接运行 code2prompt 目录输出]
     G --> H[分割输出 → 插入当前文件 → 保存]
@@ -96,10 +96,10 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[HandleClaudeCodeStartup VimEnter ++once] --> B{检查条件}
-    B -->|"不满足:&lt;br/&gt;1. 不只一个缓冲区&lt;br/&gt;2. 不是一行&lt;br/&gt;3. 不以 @ 开头"| C[直接返回 → 不处理]
+    B -->|"不满足:&lt;br/&gt;1. 不只一个缓冲区&lt;br/&gt;2. 不是一行&lt;br/&gt;3. 不以 @ 开头&lt;br/&gt;4. 文件只读"| C[直接返回 → 不处理]
     B -->|满足所有条件| D[提取 @ 之后 path_part → 删除原行 → 清空文件 → 保存]
     D --> E{path_part 空?}
-    E -->|是 - @ 单独一行| F[定时器 10ms 后执行 :Code2Prompt → 返回]
+    E -->|是 - @ 单独一行| F[直接执行 :Code2Prompt → 返回]
     E -->|否| G[转换为绝对路径]
     G --> H{是目录?}
     H -->|是| I[code2prompt 目录 → 获取输出]
