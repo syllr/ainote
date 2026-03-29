@@ -38,35 +38,19 @@ def CheckFzf(): bool
   return true
 enddef
 
-# 递归从起始目录查找所有文件
-# 限制深度避免无限递归
-# 跳过 .git 目录避免处理数千 git 内部文件
-def GetAllFiles(start_dir: string, depth: number = 10): list<any>
-  var files: list<string> = []
-
-  def Walk(dir: string, current_depth: number): void
-    if current_depth > depth
-      return
-    endif
-
-    var items = glob(dir .. '/*', v:false)
-    for item in items
-      if isdirectory(item)
-        # 跳过 .git 目录 - 它包含很多我们不需要的内部文件
-        if fnamemodify(item, ':t') != '.git'
-          Walk(item, current_depth + 1)
-        endif
-      elseif filereadable(item)
-        add(files, item)
-      endif
-    endfor
-  enddef
-
-  if isdirectory(start_dir)
-    Walk(start_dir, 0)
+# 从系统剪贴板读取内容
+# 优先使用系统命令，回退到 Vim * 寄存器
+def GetClipboardContent(): string
+  var content: string
+  if has('macunix')
+    content = system('pbpaste')
+  elseif has('x11')
+    content = system('xclip -o -selection clipboard')
+  else
+    # 回退到 Vim 剪贴板寄存器
+    content = getreg('*')
   endif
-
-  return files
+  return content
 enddef
 
 # -------------------------------------
@@ -96,15 +80,7 @@ def ProcessSelectedFile(abs_path: string): void
 
   # 从系统剪贴板读取实际内容
   # 因为 code2prompt -c 会把实际内容复制到剪贴板，stdout 只输出提示信息
-  var clipboard_content: string
-  if has('macunix')
-    clipboard_content = system('pbpaste')
-  elseif has('x11')
-    clipboard_content = system('xclip -o -selection clipboard')
-  else
-    # 回退到 Vim 剪贴板寄存器
-    clipboard_content = getreg('*')
-  endif
+  var clipboard_content = GetClipboardContent()
 
   # 如果有源文件（本次选择就是从这里发起的）
   # 直接将 code2prompt 输出追加到源文件末尾
@@ -573,8 +549,8 @@ def HandleClaudeCodeStartup(): void
 
     var target_dir = abs_path
     # 目录: 需要包含里面所有文件
-    # 直接对目录运行 code2prompt
-    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' -l --absolute-paths 2>&1'
+    # code2prompt -c: 输出复制到剪贴板，stdout 只输出提示信息
+    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' -l --absolute-paths -c 2>&1'
     var output = system(cmd)
 
     if v:shell_error != 0
@@ -582,12 +558,15 @@ def HandleClaudeCodeStartup(): void
       return
     endif
 
-    # 分割输出为行并追加到当前文件
-    var output_lines = split(output, '\n', 1)
-    if len(output_lines) > 0
+    # 从系统剪贴板读取实际内容，因为 -c 复制到剪贴板
+    var clipboard_content = GetClipboardContent()
+
+    if len(trim(clipboard_content)) > 0
+      # 分割剪贴板内容为行并追加到当前文件
+      var output_lines = split(clipboard_content, '\n', 1)
       # 从第一行开始追加所有输出行（缓冲区已经是空的）
       call append(0, output_lines)
-      silent write
+      silent! write
 
       echohl InfoMsg
       echo 'code2prompt: 目录 ' .. path_part .. ' 内容已插入当前文件'
@@ -600,9 +579,10 @@ def HandleClaudeCodeStartup(): void
     echohl None
 
     # 获取这个单个文件的 code2prompt 输出
+    # -c: 输出复制到剪贴板，stdout 只输出提示信息
     var target_dir = fnamemodify(abs_path, ':h')
     var file_name = fnamemodify(abs_path, ':t')
-    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths 2>&1'
+    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths -c 2>&1'
     var output = system(cmd)
 
     if v:shell_error != 0
@@ -610,12 +590,15 @@ def HandleClaudeCodeStartup(): void
       return
     endif
 
-    # 分割输出为行并追加到当前文件
-    var output_lines = split(output, '\n', 1)
-    if len(output_lines) > 0
+    # 从系统剪贴板读取实际内容，因为 -c 复制到剪贴板
+    var clipboard_content = GetClipboardContent()
+
+    if len(trim(clipboard_content)) > 0
+      # 分割剪贴板内容为行并追加到当前文件
+      var output_lines = split(clipboard_content, '\n', 1)
       # 从第一行开始追加所有输出行（缓冲区已经是空的）
       call append(0, output_lines)
-      silent write
+      silent! write
 
       echohl InfoMsg
       echo 'code2prompt: 文件 ' .. path_part .. ' 内容已插入当前文件'
