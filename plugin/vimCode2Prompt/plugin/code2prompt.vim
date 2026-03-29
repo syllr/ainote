@@ -65,12 +65,10 @@ def ProcessSelectedFile(abs_path: string): void
     return
   endif
 
-  # 在文件所在目录运行 code2prompt，只包含这个文件
+  # 直接对单个文件运行 code2prompt
   # code2prompt 会生成 prompt 并通过 -c 复制到剪贴板
   # -l: 输出行号，--line-numbers: 在输出中启用行号
-  var target_dir = fnamemodify(abs_path, ':h')
-  var file_name = fnamemodify(abs_path, ':t')
-  var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths -c 2>&1'
+  var cmd = 'code2prompt ' .. shellescape(abs_path) .. ' -l --absolute-paths -c 2>&1'
   var output = system(cmd)
 
   if v:shell_error != 0
@@ -580,9 +578,7 @@ def HandleClaudeCodeStartup(): void
 
     # 获取这个单个文件的 code2prompt 输出
     # -c: 输出复制到剪贴板，stdout 只输出提示信息
-    var target_dir = fnamemodify(abs_path, ':h')
-    var file_name = fnamemodify(abs_path, ':t')
-    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths -c 2>&1'
+    var cmd = 'code2prompt ' .. shellescape(abs_path) .. ' -l --absolute-paths -c 2>&1'
     var output = system(cmd)
 
     if v:shell_error != 0

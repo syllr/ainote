@@ -20,7 +20,7 @@ if (是否 Claude Code 自动检测?) then (是)
       stop
     else (否 - @file)
       if (文件是否存在可读?) then (是)
-        :运行 code2prompt -c --include 文件\n输出到剪贴板;
+        :运行 code2prompt -c 文件\n输出到剪贴板;
         :从剪贴板读取\n分割成行\n插入当前文件\n保存;
         stop
       else (否)
@@ -132,7 +132,7 @@ if (文件不存在?) then (不存在)
 else (存在)
 endif
 
-:构造 code2prompt 命令\ncode2prompt dir --include file -l --absolute-paths -c;
+:构造 code2prompt 命令\ncode2prompt file -l --absolute-paths -c;
 
 :执行命令\n获取 stdout;
 
