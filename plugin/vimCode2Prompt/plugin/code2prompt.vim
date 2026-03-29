@@ -377,7 +377,6 @@ def Code2PromptProcessSelection(line1: number, line2: number): void
 
   # Prepend source header: file path with line range outside code block
   var content_lines: list<string> = []
-  add(content_lines, '')
   add(content_lines, 'File: ' .. display_path .. ' (lines: ' .. string(line1) .. '-' .. string(line2) .. ')')
   add(content_lines, '```')
   # Add the selected lines as-is, keep original indentation
