@@ -194,8 +194,9 @@ def ProcessSelectedFiles(lines: list<any>): void
       var origin_tab = tabpagenr()
       var abs_path = lines[1]
       execute cmd .. ' | view ' .. fnameescape(abs_path)
-      # 现在我们在新标签页了，关闭原始标签页
-      execute 'silent tabclose ' .. origin_tab
+      # 现在我们在新标签页了，先保存原始标签页再关闭
+      silent! write
+      execute 'silent! tabclose ' .. origin_tab
     else
       # 多个文件或 Ctrl-X/Ctrl-V 分割: 正常打开
       if len(lines) == 2
