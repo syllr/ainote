@@ -75,28 +75,34 @@ def AppendToFileEnd(content_lines: list<string>): void
   var has_content = false
   # 遍历从第一行到最后一行，只要有一行非空白就说明文件有内容
   # 如果 last_line == 0，range(1, 0) 返回空列表，循环不执行
-  for i in range(1, last_line)
+  for i in range(1, last_line + 1)
     if trim(getline(i)) != ''
       has_content = true
       break
     endif
   endfor
 
+  
   if has_content
-    # 文件已有非空内容，追加到末尾前先加空行分隔
-    call append('$', '')
+    # 文件已有非空内容，检查最后一行是不是已经是空行
+    # 只有当最后一行不是空行时，才需要加空行分隔
+    var last_line_content = getline(last_line)
+    if trim(last_line_content) != ''
+      call append('$', '')
+    endif
     for line in content_lines
       call append('$', line)
     endfor
   else
-    # 文件完全空，从第一行开始插入
-    # 因为 append() 是在指定行后添加，所以从后往前插入保持顺序
+    # 文件完全空（所有现存行都是空白），从第一行开始覆盖插入
+    # 注意：Vim 中空文件也会有 last_line=1（一行空行），所以直接从第一行开始写
     if len(content_lines) == 0
       return
     endif
-    for i in range(len(content_lines) - 1, -1, -1)
-      call append(0, content_lines[i])
-    endfor
+    # 先删除所有现有行（它们全是空白）
+    call deletebufline('', 1, '$')
+    # 删除后 Vim 可能还留着一行空，直接用 setline 从第一行覆盖
+    call setline(1, content_lines)
   endif
 enddef
 
