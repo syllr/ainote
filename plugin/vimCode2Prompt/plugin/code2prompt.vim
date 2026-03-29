@@ -38,65 +38,7 @@ def CheckFzf(): bool
   return true
 enddef
 
-# 需要时检查 git 是否可用
-def CheckGit(): bool
-  if exepath('git') == ''
-    echoerr 'code2prompt: 在 PATH 中找不到 git 命令。'
-    return false
-  endif
-  return true
-enddef
-
-# -------------------------------------
-# 根据 git 项目检测获取文件列表
-# -------------------------------------
-
-# 检查当前目录是否是 git 仓库
-def IsGitRepository(start_dir: string): bool
-  return system('git -C ' .. shellescape(start_dir) .. ' rev-parse --is-inside-work-tree 2>/dev/null') =~ '^true'
-enddef
-
-# 从仓库根目录读取 .gitignore，提取排除模式
-def ReadGitIgnore(repo_root: string): list<any>
-  var gitignore_path = repo_root .. '/.gitignore'
-  if !filereadable(gitignore_path)
-    return []
-  endif
-
-  var lines = readfile(gitignore_path)
-  var patterns: list<any> = []
-
-  for line in lines
-    var trimmed = trim(line)
-    # 跳过空行和注释
-    if trimmed == '' || trimmed[0] == '#'
-      continue
-    endif
-    # 跳过取反模式（我们 anyway 不处理复杂规则）
-    if trimmed[0] == '!'
-      continue
-    endif
-    # 添加模式
-    add(patterns, trimmed)
-  endfor
-
-  return patterns
-enddef
-
-# 获取 git 仓库所有文件列表
-def GetGitFileList(start_dir: string): list<any>
-  # 获取仓库根目录
-  var repo_root = system('git -C ' .. shellescape(start_dir) .. ' rev-parse --show-toplevel')->trim()
-  if repo_root == ''
-    return []
-  endif
-
-  # 递归获取根目录下所有文件
-  var all_files = GetAllFiles(repo_root)
-  return all_files
-enddef
-
-# 非 git 项目：从起始目录递归查找所有文件
+# 递归从起始目录查找所有文件
 # 限制深度避免无限递归
 # 跳过 .git 目录避免处理数千 git 内部文件
 def GetAllFiles(start_dir: string, depth: number = 10): list<any>
