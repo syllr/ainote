@@ -276,7 +276,16 @@ enddef
 # Main user command
 # -------------------------------------
 
-def Code2PromptCommand(args: string = ''): void
+def Code2PromptCommand(line1: number, line2: number, args: string = ''): void
+  # Check if there is an active visual selection
+  # line1 != line2 means user has selected text in visual mode
+  if line1 != line2
+    # User has visually selected text - process selection with code2prompt
+    Code2PromptProcessSelection(line1, line2)
+    return
+  endif
+
+  # NO selection - continue with original logic
   # Check all dependencies first
   if !CheckCode2prompt()
     return
@@ -312,6 +321,55 @@ def Code2PromptCommand(args: string = ''): void
 
   # Start fzf selection (exclude hidden files, default behavior)
   Code2PromptFzf(start_path, false)
+enddef
+
+# Process visually selected text - generate code2prompt prompt with filename and line numbers
+def Code2PromptProcessSelection(line1: number, line2: number): void
+  # Check dependencies
+  if !CheckCode2prompt()
+    return
+  endif
+
+  # line1 and line2 already passed from command
+
+  # Get the selected text
+  var selected_lines = getline(line1, line2)
+  if len(selected_lines) == 0
+    echoerr 'code2prompt: no text selected'
+    return
+  endif
+
+  # Get current file absolute path
+  var abs_path = expand('%:p')
+  if abs_path == ''
+    echoerr 'code2prompt: no file name'
+    return
+  endif
+
+  var rel_path = fnamemodify(abs_path, ':~')
+  var target_dir = fnamemodify(abs_path, ':h')
+
+  # Create temp file with the selected text only
+  var temp_dir = $TMPDIR != '' ? $TMPDIR : '/tmp'
+  var temp_file = temp_dir .. '/code2prompt-selection-' .. getpid() .. '.tmp'
+  call writefile(selected_lines, temp_file)
+
+  # Run code2prompt on temp file
+  # code2prompt will generate the prompt and copy to system clipboard automatically with -c
+  var cmd = 'code2prompt ' .. shellescape(fnamemodify(temp_file, ':h')) .. ' --include ' .. shellescape(fnamemodify(temp_file, ':t')) .. ' -l --absolute-paths -c 2>&1'
+  var output = system(cmd)
+
+  # Cleanup temp file
+  call delete(temp_file)
+
+  if v:shell_error != 0
+    echoerr 'code2prompt: command failed: ' .. output
+    return
+  endif
+
+  echohl InfoMsg
+  echo 'code2prompt: selected text from ' .. rel_path .. ':' .. line1 .. '-' .. line2 .. ' → copied to clipboard'
+  echohl None
 enddef
 
 def Code2PromptWithHiddenFileCommand(args: string = ''): void
@@ -353,7 +411,8 @@ def Code2PromptWithHiddenFileCommand(args: string = ''): void
 enddef
 
 # Create the user command (must start with uppercase per Vim rules)
-command! -nargs=* Code2Prompt :call Code2PromptCommand(<q-args>)
+# -range: allow visual selection, passes <line1> <line2>
+command! -range -nargs=* Code2Prompt :call Code2PromptCommand(<line1>, <line2>, <q-args>)
 # Allow lowercase :code2prompt via abbreviation
 cabbrev code2prompt Code2Prompt
 
