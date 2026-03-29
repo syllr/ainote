@@ -151,6 +151,74 @@ def ProcessSelectedFile(abs_path: string): void
     return
   endif
 
+  # Read the content from system clipboard (* register)
+  # Because code2prompt -c copies the actual content to clipboard
+  var clipboard_content: string
+  if has('macunix')
+    clipboard_content = system('pbpaste')
+  elseif has('x11')
+    clipboard_content = system('xclip -o -selection clipboard')
+  else
+    # Fall back to Vim's clipboard register
+    clipboard_content = getreg('*')
+  endif
+
+  # If we have an origin file (where this selection started from)
+  # Append the code2prompt output directly to the end of origin file
+  # This avoids the need for user to manually paste from clipboard
+  var target_origin: string
+  if g:code2prompt_origin_file != '' && filereadable(g:code2prompt_origin_file) && filewritable(g:code2prompt_origin_file)
+    target_origin = g:code2prompt_origin_file
+  else
+    # No stored origin file - current buffer is the origin file
+    # This is the case when user press Enter directly in fzf selection
+    var current_buf_file = expand('%:p')
+    if current_buf_file != '' && filereadable(current_buf_file) && filewritable(current_buf_file)
+      target_origin = current_buf_file
+    else
+      # No valid origin file - fall back to clipboard only
+      target_origin = ''
+    endif
+  endif
+
+  if target_origin != '' && len(trim(clipboard_content)) > 0
+    var output_lines = split(clipboard_content, '\n', 1)
+    var origin_buf = bufadd(target_origin)
+    if origin_buf >= 0
+      var winview = winsaveview()
+      silent exe 'buffer ' .. origin_buf
+      normal! G$
+      # Add an empty line before the new content if file isn't empty
+      # If file is empty (only 0 lines or first line is empty), insert directly at line 1
+      var last_line = line('$')
+      if last_line > 0 && trim(getline('$')) != ''
+        # File has content, add empty line before appending
+        call append('$', '')
+        for line in output_lines
+          call append('$', line)
+        endfor
+      else
+        # File is empty, insert starting from line 1
+        # Reverse because append() adds after, so we insert from last to first to keep order
+        for i in range(len(output_lines) - 1, 0, -1)
+          call append(0, output_lines[i])
+        endfor
+      endif
+      silent write
+      winrestview(winview)
+
+      var display_path = fnamemodify(abs_path, ':~')
+      var origin_display = fnamemodify(target_origin, ':~')
+      echohl InfoMsg
+      echo 'code2prompt: ' .. display_path .. ' appended to ' .. origin_display
+      echohl None
+      # Clear the origin file - one-time use if it was stored
+      g:code2prompt_origin_file = ''
+      return
+    endif
+  endif
+
+  # No origin file or failed to open or clipboard empty - fall back to clipboard only
   echohl InfoMsg
   echo 'code2prompt: content copied to system clipboard from ' .. abs_path
   echohl None
