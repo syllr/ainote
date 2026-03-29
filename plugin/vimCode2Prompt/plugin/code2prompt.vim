@@ -1,63 +1,63 @@
-" Vim9 plugin for code2prompt integration
-" Requires: Vim 9+, fzf.vim, code2prompt in PATH
-" Description: Select a file via fzf and insert code2prompt output at cursor
+" Vim9 plugin code2prompt 集成插件
+" 依赖: Vim 9+, fzf.vim, 系统 PATH 中需要有 code2prompt 命令
+" 功能描述: 通过 fzf 选择文件，将 code2prompt 生成的 prompt 插入光标位置
 
 vim9script
 
-# Only load once
+# 只加载一次
 if exists('g:loaded_code2prompt')
   finish
 endif
 g:loaded_code2prompt = 1
 
-# Store the origin file path where code2prompt was originally invoked from
-# When you open a new file via Ctrl-T/Ctrl-V/Ctrl-X, we remember where you came from
-# After appending selected content to origin file, we clear it
+# 存储最初调用 code2prompt 的源文件路径
+# 当你通过 Ctrl-T/Ctrl-V/Ctrl-X 打开新文件时，我们记住你从哪里来
+# 将选中内容追加到源文件后，会清空这个变量
 g:code2prompt_origin_file = ''
 
 # -------------------------------------
-# Check dependencies
+# 检查依赖
 # -------------------------------------
 
-# Check if code2prompt is available in PATH
+# 检查系统 PATH 中是否有 code2prompt 命令
 def CheckCode2prompt(): bool
-  # Use exepath to check if command exists
+  # 使用 exepath 检查命令是否存在
   if exepath('code2prompt') == ''
-    echoerr 'code2prompt: command not found in PATH. Please install code2prompt first.'
+    echoerr 'code2prompt: 在 PATH 中找不到 code2prompt 命令，请先安装 code2prompt。'
     return false
   endif
   return true
 enddef
 
-# Check if fzf.vim is available
+# 检查 fzf.vim 是否可用
 def CheckFzf(): bool
   if !exists('*fzf#run')
-    echoerr 'code2prompt: fzf#run function not found. Please install fzf and fzf.vim first.'
+    echoerr 'code2prompt: 找不到 fzf#run 函数，请先安装 fzf 和 fzf.vim。'
     return false
   endif
   return true
 enddef
 
-# Check if git is available when needed
+# 需要时检查 git 是否可用
 def CheckGit(): bool
   if exepath('git') == ''
-    echoerr 'code2prompt: git command not found in PATH.'
+    echoerr 'code2prompt: 在 PATH 中找不到 git 命令。'
     return false
   endif
   return true
 enddef
 
 # -------------------------------------
-# Get file list based on git project detection
+# 根据 git 项目检测获取文件列表
 # -------------------------------------
 
+# 检查当前目录是否是 git 仓库
 def IsGitRepository(start_dir: string): bool
-  # Check if we're in a git repository
   return system('git -C ' .. shellescape(start_dir) .. ' rev-parse --is-inside-work-tree 2>/dev/null') =~ '^true'
 enddef
 
+# 从仓库根目录读取 .gitignore，提取排除模式
 def ReadGitIgnore(repo_root: string): list<any>
-  # Read .gitignore from repository root, extract exclude patterns
   var gitignore_path = repo_root .. '/.gitignore'
   if !filereadable(gitignore_path)
     return []
@@ -68,37 +68,38 @@ def ReadGitIgnore(repo_root: string): list<any>
 
   for line in lines
     var trimmed = trim(line)
-    # Skip empty lines and comments
+    # 跳过空行和注释
     if trimmed == '' || trimmed[0] == '#'
       continue
     endif
-    # Skip negation patterns (we don't handle complex rules anyway)
+    # 跳过取反模式（我们 anyway 不处理复杂规则）
     if trimmed[0] == '!'
       continue
     endif
-    # Add the pattern
+    # 添加模式
     add(patterns, trimmed)
   endfor
 
   return patterns
 enddef
 
+# 获取 git 仓库所有文件列表
 def GetGitFileList(start_dir: string): list<any>
-  # Get repository root
+  # 获取仓库根目录
   var repo_root = system('git -C ' .. shellescape(start_dir) .. ' rev-parse --show-toplevel')->trim()
   if repo_root == ''
     return []
   endif
 
-  # Get all files recursively from repo root
+  # 递归获取根目录下所有文件
   var all_files = GetAllFiles(repo_root)
   return all_files
 enddef
 
+# 非 git 项目：从起始目录递归查找所有文件
+# 限制深度避免无限递归
+# 跳过 .git 目录避免处理数千 git 内部文件
 def GetAllFiles(start_dir: string, depth: number = 10): list<any>
-  # Non-git project: recursively find all files from starting directory
-  # Limit depth to avoid infinite recursion
-  # Skip .git directory to avoid processing thousands of git internal files
   var files: list<string> = []
 
   def Walk(dir: string, current_depth: number): void
@@ -109,7 +110,7 @@ def GetAllFiles(start_dir: string, depth: number = 10): list<any>
     var items = glob(dir .. '/*', v:false)
     for item in items
       if isdirectory(item)
-        # Skip .git directory - it contains lots of internal files we don't need
+        # 跳过 .git 目录 - 它包含很多我们不需要的内部文件
         if fnamemodify(item, ':t') != '.git'
           Walk(item, current_depth + 1)
         endif
@@ -127,56 +128,56 @@ def GetAllFiles(start_dir: string, depth: number = 10): list<any>
 enddef
 
 # -------------------------------------
-# Main handler after file selection
+# 文件选择后的主处理函数
 # -------------------------------------
 
-# Single file selection - one file directly processed
+# 单个文件选择 - 直接处理一个文件
 def ProcessSelectedFile(abs_path: string): void
-  # Check if file exists and is readable
+  # 检查文件是否存在且可读
   if !filereadable(abs_path)
-    echoerr 'code2prompt: file not readable: ' .. abs_path
+    echoerr 'code2prompt: 文件不可读: ' .. abs_path
     return
   endif
 
-  # Run code2prompt on the file's directory, include only this file
-  # code2prompt will generate the prompt and copy to clipboard with -c
-  # -l: output line numbers, --line-numbers: enable line numbers in output
+  # 在文件所在目录运行 code2prompt，只包含这个文件
+  # code2prompt 会生成 prompt 并通过 -c 复制到剪贴板
+  # -l: 输出行号，--line-numbers: 在输出中启用行号
   var target_dir = fnamemodify(abs_path, ':h')
   var file_name = fnamemodify(abs_path, ':t')
   var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths -c 2>&1'
   var output = system(cmd)
 
   if v:shell_error != 0
-    echoerr 'code2prompt: command failed with error: ' .. output
+    echoerr 'code2prompt: 命令执行失败: ' .. output
     return
   endif
 
-  # Read the content from system clipboard (* register)
-  # Because code2prompt -c copies the actual content to clipboard
+  # 从系统剪贴板读取实际内容
+  # 因为 code2prompt -c 会把实际内容复制到剪贴板，stdout 只输出提示信息
   var clipboard_content: string
   if has('macunix')
     clipboard_content = system('pbpaste')
   elseif has('x11')
     clipboard_content = system('xclip -o -selection clipboard')
   else
-    # Fall back to Vim's clipboard register
+    # 回退到 Vim 剪贴板寄存器
     clipboard_content = getreg('*')
   endif
 
-  # If we have an origin file (where this selection started from)
-  # Append the code2prompt output directly to the end of origin file
-  # This avoids the need for user to manually paste from clipboard
+  # 如果有源文件（本次选择就是从这里发起的）
+  # 直接将 code2prompt 输出追加到源文件末尾
+  # 这样用户不需要手动从剪贴板粘贴
   var target_origin: string
   if g:code2prompt_origin_file != '' && filereadable(g:code2prompt_origin_file) && filewritable(g:code2prompt_origin_file)
     target_origin = g:code2prompt_origin_file
   else
-    # No stored origin file - current buffer is the origin file
-    # This is the case when user press Enter directly in fzf selection
+    # 没有存储的源文件 - 当前缓冲区就是源文件
+    # 这就是用户在 fzf 中直接按 Enter 选择的场景
     var current_buf_file = expand('%:p')
     if current_buf_file != '' && filereadable(current_buf_file) && filewritable(current_buf_file)
       target_origin = current_buf_file
     else
-      # No valid origin file - fall back to clipboard only
+      # 没有有效的源文件 - 回退到只复制到剪贴板
       target_origin = ''
     endif
   endif
@@ -188,18 +189,18 @@ def ProcessSelectedFile(abs_path: string): void
       var winview = winsaveview()
       silent exe 'buffer ' .. origin_buf
       normal! G$
-      # Add an empty line before the new content if file isn't empty
-      # If file is empty (only 0 lines or first line is empty), insert directly at line 1
+      # 如果文件不为空，在新内容前添加空行
+      # 如果文件是空的（0 行或第一行为空），直接从第一行插入
       var last_line = line('$')
       if last_line > 0 && trim(getline('$')) != ''
-        # File has content, add empty line before appending
+        # 文件已有内容，追加前添加空行
         call append('$', '')
         for line in output_lines
           call append('$', line)
         endfor
       else
-        # File is empty, insert starting from line 1
-        # Reverse because append() adds after, so we insert from last to first to keep order
+        # 文件是空的，从第一行开始插入
+        # 因为 append() 是在指定行后添加，所以从后往前插入保持顺序
         for i in range(len(output_lines) - 1, 0, -1)
           call append(0, output_lines[i])
         endfor
@@ -210,25 +211,25 @@ def ProcessSelectedFile(abs_path: string): void
       var display_path = fnamemodify(abs_path, ':~')
       var origin_display = fnamemodify(target_origin, ':~')
       echohl InfoMsg
-      echo 'code2prompt: ' .. display_path .. ' appended to ' .. origin_display
+      echo 'code2prompt: ' .. display_path .. ' 已追加到 ' .. origin_display
       echohl None
-      # Clear the origin file - one-time use if it was stored
+      # 清空源文件路径 - 一次性使用
       g:code2prompt_origin_file = ''
       return
     endif
   endif
 
-  # No origin file or failed to open or clipboard empty - fall back to clipboard only
+  # 没有源文件或打开失败或剪贴板为空 - 回退到只复制到剪贴板
   echohl InfoMsg
-  echo 'code2prompt: content copied to system clipboard from ' .. abs_path
+  echo 'code2prompt: 内容已复制到系统剪贴板来自 ' .. abs_path
   echohl None
 enddef
 
-# Handle multiple selections with different key bindings (supports Ctrl-T/Ctrl-V/Ctrl-X to open files)
-# When using these shortcut keys, open files in new tab/split instead of processing for code2prompt
-# Files are opened in read-only mode
+# 处理多选，支持不同按键绑定（支持 Ctrl-T/Ctrl-V/Ctrl-X 打开文件）
+# 使用这些快捷键时，在新标签页/分屏打开文件而不是直接处理 code2prompt
+# 文件以只读模式打开
 def ProcessSelectedFiles(lines: list<any>): void
-  # Get default fzf action mapping from global config
+  # 从全局配置获取默认 fzf 动作映射
   var default_action = {
     'ctrl-t': 'tab split',
     'ctrl-x': 'split',
@@ -239,20 +240,20 @@ def ProcessSelectedFiles(lines: list<any>): void
     actions = g:fzf_action
   endif
 
-  # --expect output format: first line is ALWAYS the key pressed
-  # - Empty key ("") means Enter was pressed (normal selection -> process as code2prompt)
-  # - Non-empty key matches our expected bindings (ctrl-t/ctrl-x/ctrl-v) -> open in new tab/split
-  # After first line: the selected filenames
+  # --expect 输出格式: 第一行 **总是**按下的按键
+  # - 空按键 ("") 表示按下了 Enter（正常选择 -> 作为 code2prompt 处理）
+  # - 非空按键匹配我们预期的绑定（ctrl-t/ctrl-x/ctrl-v）-> 在新标签页/分屏打开
+  # 第一行之后: 选中的文件名
   if len(lines) < 1
     return
   endif
 
-  # First line is always the key from --expect
+  # 第一行总是来自 --expect 的按键
   var key = lines[0]
 
   if key == ''
-    # Enter pressed (no shortcut key used) - normal selection
-    # Process the file directly with code2prompt
+    # 按下了 Enter（没有使用快捷键）- 正常选择
+    # 直接处理文件为 code2prompt
     if len(lines) < 2
       return
     endif
@@ -261,74 +262,74 @@ def ProcessSelectedFiles(lines: list<any>): void
     return
   endif
 
-  # Key is not empty - user pressed one of our shortcut keys (ctrl-t/ctrl-x/ctrl-v)
-  # Save the current file (where code2prompt was invoked) as origin file
-  # We will append selected content back to this origin file later
+  # 按键非空 - 用户按下了我们的一个快捷键（ctrl-t/ctrl-x/ctrl-v）
+  # 保存当前文件（code2prompt 就是在这里调用的）作为源文件
+  # 之后我们会把选中内容追加回这个源文件
   var current_origin = expand('%:p')
   if current_origin != '' && filereadable(current_origin)
     g:code2prompt_origin_file = current_origin
   endif
 
-  # Open the file(s) in read-only mode
+  # 只读模式打开文件
   if has_key(actions, key)
     var cmd = actions[key]
     if key == 'ctrl-t' && len(lines) == 2
-      # For Ctrl-T single file: remember original tab number before opening
+      # Ctrl-T 单个文件: 打开前记住原始标签页编号
       var origin_tab = tabpagenr()
       var abs_path = lines[1]
       execute cmd .. ' | view ' .. fnameescape(abs_path)
-      # Close the original origin tab now that we're in new tab
+      # 现在我们在新标签页了，关闭原始标签页
       execute 'silent tabclose ' .. origin_tab
     else
-      # Multiple files or Ctrl-X/Ctrl-V split: normal opening
+      # 多个文件或 Ctrl-X/Ctrl-V 分割: 正常打开
       if len(lines) == 2
-        # Single file
+        # 单个文件
         var abs_path = lines[1]
         execute cmd .. ' | view ' .. fnameescape(abs_path)
       else
-        # Multiple files - first line is key, open each file
+        # 多个文件 - 第一行是按键，每个文件都打开
         for abs_path in lines[1 : ]
           execute cmd .. ' | view ' .. fnameescape(abs_path)
         endfor
       endif
     endif
   else
-    # Unknown key - fallback: treat first line as filename
+    # 未知按键 - 回退: 把第一行当作文件名
     ProcessSelectedFile(key)
   endif
 enddef
 
 # -------------------------------------
-# Fzf source for file selection
+# Fzf 文件选择源
 # -------------------------------------
 
 def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
-  # Build walker-skip list:
-  # Always skip .git (too many internal files) and common large directories
-  # When include_hidden is false (default): also skip all other hidden directories starting with .
-  # When include_hidden is true: only skip .git, show other hidden files/directories
+  # 构建 walker-skip 列表:
+  # 总是跳过 .git（太多内部文件）和常见大目录
+  # include_hidden 为 false（默认）时: 还跳过所有其他以 . 开头的隐藏目录
+  # include_hidden 为 true 时: 只跳过 .git，显示其他隐藏文件/目录
   var skip_dirs: string
 
   if include_hidden
-    # Only skip .git directory and common large project directories (by basename)
-    # Keep ALL OTHER hidden files/directories (including .claude, .gitignore, etc.)
+    # 只跳过 .git 和常见大项目目录（按basename）
+    # 保留 **所有其他** 隐藏文件/目录（包括 .claude, .gitignore 等）
     skip_dirs = '.git,node_modules,target,venv,.venv'
   else
-    # Skip ALL hidden directories starting with . plus common large directories
-    # .* matches any hidden file/directory starting with dot
+    # 跳过 **所有** 以 . 开头的隐藏目录加上常见大目录
+    # .* 匹配任何以点开头的隐藏文件/目录
     skip_dirs = '.*,.git,node_modules,target,venv,.venv'
   endif
 
-  # Build fzf options as a list (each option is separate list item - correct format for fzf.vim)
+  # 构建 fzf 选项为列表（每个选项是单独的列表项 - fzf.vim 要求的正确格式）
   var fzf_options: list<any> = []
 
-  # Basic layout
+  # 基础布局
   add(fzf_options, '--layout=reverse')
   add(fzf_options, '--info=inline')
   add(fzf_options, '--height=40%')
 
-  # Walker settings: only list files, follow symlinks, skip configured directories
-  # Add 'hidden' to walker when include_hidden is true - enables showing hidden files/directories
+  # Walker 设置: 只列出文件，跟随符号链接，跳过配置的目录
+  # include_hidden 为 true 时给 walker 添加 'hidden' - 启用显示隐藏文件/目录
   if include_hidden
     add(fzf_options, '--walker=file,follow,hidden')
   else
@@ -337,55 +338,55 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   add(fzf_options, '--walker-skip')
   add(fzf_options, skip_dirs)
 
-  # Expect key bindings for Ctrl-T/Ctrl-X/Ctrl-V - enables opening in new tab/split
+  # 为 Ctrl-T/Ctrl-X/Ctrl-V 期望按键绑定 - 允许在新标签页/分屏打开
   add(fzf_options, '--expect')
   add(fzf_options, 'ctrl-t,ctrl-x,ctrl-v')
 
-  # Custom prompt (each part is separate list item, no quotes needed - fzf.vim escapes automatically)
+  # 自定义提示符（每部分单独列表项，不需要引号 - fzf.vim 会自动转义）
   if include_hidden
     add(fzf_options, '--prompt')
-    add(fzf_options, 'code2prompt (incl. hidden) > ')
+    add(fzf_options, 'code2prompt (含隐藏) > ')
   else
     add(fzf_options, '--prompt')
     add(fzf_options, 'code2prompt > ')
   endif
 
-  # Directly use fzf#run with fzf#wrap - let fzf do the directory walking
-  # fzf handles skipping internally, no Vimscript traversal, won't freeze on large projects
-  # Add file preview using fzf#vim#with_preview (same as :Files command)
-  # Use sink* instead of sink to support multiple key bindings (Ctrl-T/Ctrl-V/Ctrl-X)
+  # 直接使用 fzf#run 配合 fzf#wrap - 让 fzf 处理目录遍历
+  # fzf 内部处理跳过，Vimscript 不需要遍历，大项目不会卡住
+  # 使用 fzf#vim#with_preview 添加文件预览（和 :Files 命令一样）
+  # 使用 sink* 而不是 sink 来支持多个按键绑定（Ctrl-T/Ctrl-V/Ctrl-X）
   var spec = {
     'cwd': start_path,
     'sink*': function('ProcessSelectedFiles'),
     'options': fzf_options
   }
-  # Use fzf.vim's with_preview helper to enable preview window
-  # This automatically:
-  # - Adds --preview with the preview.sh script that supports bat syntax highlighting
-  # - Adds --preview-window with default configuration (respects g:fzf_vim.preview_window)
-  # - Adds key binding (ctrl-/) to toggle preview window
-  # - Handles bat detection automatically
+  # 使用 fzf.vim 的 with_preview 助手启用预览窗口
+  # 这会自动:
+  # - 添加 --preview 使用支持 bat 语法高亮的 preview.sh 脚本
+  # - 添加 --preview-window 使用默认配置（尊重 g:fzf_vim.preview_window）
+  # - 添加按键 ctrl-/ 切换预览窗口
+  # - 自动处理 bat 检测
   var wrapped_spec = fzf#vim#with_preview(spec)
   call fzf#run(wrapped_spec)
 enddef
 
 # -------------------------------------
-# Main user command
+# 主用户命令
 # -------------------------------------
 
 def Code2PromptCommand(line1: number, line2: number, args: string = ''): void
-  # Check if there is an active visual selection
-  # When using :'<,'>command from visual mode, line1 and line2 are always set
-  # Even for single-line selection, line1 == line2 but we still have a selection
-  # Check visualmode() to confirm we came from visual mode
+  # 检查是否有激活的可视区域选择
+  # 当从可视模式使用 :'<,'>command 时，line1 和 line2 总会被设置
+  # 即使单行选择，line1 == line2 但我们仍然有选择
+  # 检查 visualmode() 确认我们来自可视模式
   if visualmode() != ''
-    # User has visually selected text - process selection with code2prompt
+    # 用户可视选择了文本 - 使用 code2prompt 处理选择
     Code2PromptProcessSelection(line1, line2)
     return
   endif
 
-  # NO selection - continue with original logic
-  # Check all dependencies first
+  # 没有选择 - 继续原始逻辑
+  # 先检查所有依赖
   if !CheckCode2prompt()
     return
   endif
@@ -393,130 +394,130 @@ def Code2PromptCommand(line1: number, line2: number, args: string = ''): void
     return
   endif
 
-  # Determine starting path
+  # 确定起始路径
   var start_path: string
 
   if args != ''
-    # User provided path argument
+    # 用户提供了路径参数
     start_path = expand(args)
   else
-    # Default: current working directory
+    # 默认: 当前工作目录
     start_path = getcwd()
   endif
 
-  # Normalize path to absolute
+  # 归一化为绝对路径
   if !isdirectory(expand(start_path))
     if filereadable(expand(start_path))
-      # If it's a file, use its directory
+      # 如果是文件，使用它的目录
       start_path = fnamemodify(start_path, ':h')
     else
-      echoerr 'code2prompt: path not found: ' .. start_path
+      echoerr 'code2prompt: 路径不存在: ' .. start_path
       return
     endif
   endif
 
-  # Convert to absolute path
+  # 转换为绝对路径
   start_path = fnamemodify(start_path, ':p')
 
-  # Start fzf selection (exclude hidden files, default behavior)
+  # 开始 fzf 选择（排除隐藏文件，默认行为）
   Code2PromptFzf(start_path, false)
 enddef
 
-# Process visually selected text - directly append to origin file with source info
+# 处理可视区域选中文本 - 直接带着源信息追加到源文件
 def Code2PromptProcessSelection(line1: number, line2: number): void
-  # line1 and line2 already passed from command
+  # line1 和 line2 已经从命令传入
 
-  # Get the selected text
+  # 获取选中的文本
   var selected_lines = getline(line1, line2)
   if len(selected_lines) == 0
-    echoerr 'code2prompt: no text selected'
+    echoerr 'code2prompt: 没有选中文本'
     return
   endif
 
-  # Get current file absolute path (the file where selection was made)
+  # 获取当前文件绝对路径（选择是在这里做的）
   var current_file = expand('%:p')
   if current_file == ''
-    echoerr 'code2prompt: cannot get current file name'
+    echoerr 'code2prompt: 无法获取当前文件名'
     return
   endif
 
-  # Use tilde path for display
+  # 使用波浪路径显示
   var display_path = fnamemodify(current_file, ':~')
 
-  # Prepend source header: file path with line range outside code block
+  # 在代码块外前置源信息头: 文件路径加行号范围
   var content_lines: list<string> = []
   add(content_lines, 'File: ' .. display_path .. ' (lines: ' .. string(line1) .. '-' .. string(line2) .. ')')
   add(content_lines, '```')
-  # Add the selected lines as-is, keep original indentation
+  # 原样添加选中行，保持原始缩进
   for line in selected_lines
     add(content_lines, line)
   endfor
   add(content_lines, '```')
   add(content_lines, '')
 
-  # Check if we have a valid origin file to append to
+  # 检查是否有有效的源文件可以追加
   if g:code2prompt_origin_file != '' && filereadable(g:code2prompt_origin_file)
-    # Branch 1: have valid origin file - append to the END of origin file
-    # Open origin file in the background, append, save, close
-    # We do this silently to avoid disrupting user
+    # 分支 1: 有有效源文件 - 追加到**源文件末尾**
+    # 在后台打开源文件，追加，保存，关闭
+    # 我们静默操作避免打扰用户
     var origin_buf = bufadd(g:code2prompt_origin_file)
     if origin_buf < 0
-      echoerr 'code2prompt: cannot open origin file: ' .. g:code2prompt_origin_file
+      echoerr 'code2prompt: 无法打开源文件: ' .. g:code2prompt_origin_file
       g:code2prompt_origin_file = ''
       return
     endif
 
-    # Keep the original window view
+    # 保持原始窗口视图
     var winview = winsaveview()
     silent exe 'buffer ' .. origin_buf
     normal! G$
-    # Append each content line at the end
+    # 在末尾追加每个内容行
     for line in content_lines
       call append('$', line)
     endfor
     silent write
     winrestview(winview)
 
-    # Clear the origin file - this is one-time use only
+    # 清空源文件 - 这只是一次性使用
     var origin_path = g:code2prompt_origin_file
     g:code2prompt_origin_file = ''
 
     echohl InfoMsg
-    echo 'code2prompt: selected ' .. display_path .. ' lines ' .. string(line1) .. '-' .. string(line2) .. ' appended to ' .. fnamemodify(origin_path, ':~')
+    echo 'code2prompt: 选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2) .. ' 已追加到 ' .. fnamemodify(origin_path, ':~')
     echohl None
   else
-    # Branch 2: no origin file - copy formatted content to system clipboard
-    # Join all lines into single string
+    # 分支 2: 没有源文件 - 格式化内容复制到系统剪贴板
+    # 合并所有行为单个字符串
     var full_content = join(content_lines, "\n")
 
-    # Copy to clipboard based on OS
+    # 根据 OS 复制到剪贴板
     if has('macunix')
-      # macOS: use pbcopy
+      # macOS: 使用 pbcopy
       call system('pbcopy', split(full_content, "\n"))
     else
-      # Linux: use xclip
+      # Linux: 使用 xclip
       call system('xclip -selection clipboard', split(full_content, "\n"))
     endif
 
     echohl InfoMsg
-    echo 'code2prompt: selected ' .. display_path .. ' lines ' .. string(line1) .. '-' .. string(line2) .. ' copied to clipboard'
+    echo 'code2prompt: 选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2) .. ' 已复制到剪贴板'
     echohl None
   endif
 enddef
 
 def Code2PromptWithHiddenFileCommand(line1: number, line2: number, args: string = ''): void
-  # Check if there is an active visual selection
-  # When using :'<,'>command from visual mode, line1 and line2 are always set
-  # Even for single-line selection, line1 == line2 but we still have a selection
-  # Check visualmode() to confirm we came from visual mode
+  # 检查是否有激活的可视区域选择
+  # 当从可视模式使用 :'<,'>command 时，line1 和 line2 总会被设置
+  # 即使单行选择，line1 == line2 但我们仍然有选择
+  # 检查 visualmode() 确认我们来自可视模式
   if visualmode() != ''
-    # User has visually selected text - process selection with code2prompt
+    # 用户可视选择了文本 - 使用 code2prompt 处理选择
     Code2PromptProcessSelection(line1, line2)
     return
   endif
 
-  # NO selection - continue with original logic
-  # Check all dependencies first
+  # 没有选择 - 继续原始逻辑
+  # 先检查所有依赖
   if !CheckCode2prompt()
     return
   endif
@@ -524,61 +525,61 @@ def Code2PromptWithHiddenFileCommand(line1: number, line2: number, args: string 
     return
   endif
 
-  # Determine starting path
+  # 确定起始路径
   var start_path: string
 
   if args != ''
-    # User provided path argument
+    # 用户提供了路径参数
     start_path = expand(args)
   else
-    # Default: current working directory
+    # 默认: 当前工作目录
     start_path = getcwd()
   endif
 
-  # Normalize path to absolute
+  # 归一化为绝对路径
   if !isdirectory(expand(start_path))
     if filereadable(expand(start_path))
-      # If it's a file, use its directory
+      # 如果是文件，使用它的目录
       start_path = fnamemodify(start_path, ':h')
     else
-      echoerr 'code2prompt: path not found: ' .. start_path
+      echoerr 'code2prompt: 路径不存在: ' .. start_path
       return
     endif
   endif
 
-  # Convert to absolute path
+  # 转换为绝对路径
   start_path = fnamemodify(start_path, ':p')
 
-  # Start fzf selection (include hidden files, except .git)
+  # 开始 fzf 选择（包含隐藏文件，除了 .git）
   Code2PromptFzf(start_path, true)
 enddef
 
-# Create the user command (must start with uppercase per Vim rules)
-# -range: allow visual selection, passes <line1> <line2>
+# 创建用户命令（按 Vim 规则必须以大写开头）
+# -range: 允许可视选择，传递 <line1> <line2>
 command! -range -nargs=* Code2Prompt :call Code2PromptCommand(<line1>, <line2>, <q-args>)
-# Allow lowercase :code2prompt via abbreviation
+# 允许小写 :code2prompt 通过缩写
 cabbrev code2prompt Code2Prompt
 
-# Create the command that includes hidden files (except .git)
-# -range: allow visual selection, passes <line1> <line2>
+# 创建包含隐藏文件的命令（除了 .git）
+# -range: 允许可视选择，传递 <line1> <line2>
 command! -range -nargs=* Code2PromptWithHiddenFile :call Code2PromptWithHiddenFileCommand(<line1>, <line2>, <q-args>)
-# Allow lowercase via abbreviation (use underscore instead of hyphen - cabbrev doesn't work well with hyphen)
+# 通过缩写允许小写（连字符不好用 cabbrev，所以改用下划线）
 cabbrev code2prompt_with_hidden Code2PromptWithHiddenFile
 
 # -------------------------------------
-# Claude Code external editor auto-detection
+# Claude Code 外部编辑器自动检测
 # -------------------------------------
 
-# Auto-detect Claude Code temporary file and handle @ notation on Vim startup
-# This only triggers when:
-# 1. Vim is started with exactly one file (the Claude temporary file)
-# 2. The file contains exactly one line
-# 3. The line starts with @ (Claude Code file selection format)
+# Vim 启动时自动检测 Claude Code 临时文件并处理 @ 语法
+# 只在以下情况触发:
+# 1. Vim 启动只打开这一个文件（就是 Claude 临时文件）
+# 2. 文件恰好只有一行
+# 3. 该行以 @ 开头（Claude Code 文件选择格式）
 def HandleClaudeCodeStartup(): void
-  # Only run when:
-  # - Only one buffer is open (Vim started directly to edit this file)
-  # - File has exactly one line
-  # - Line starts with @
+  # 只在以下情况运行:
+  # - 只有一个缓冲区打开（Vim 直接启动编辑这个文件）
+  # - 文件恰好只有一行
+  # - 行以 @ 开头
   if len(getbufinfo({'buflisted': 1})) != 1
     return
   endif
@@ -593,22 +594,22 @@ def HandleClaudeCodeStartup(): void
     return
   endif
 
-  # Extract the path part after @
+  # 提取 @ 之后的路径部分
   var path_part = trim(content[1 : ])
   var current_file = expand('%:p')
 
-  # Clear the original line (user requested: empty file first before processing)
-  # Delete all content (we already know it's only one line)
+  # 清空原始行（用户要求: 处理前先清空文件）
+  # 删除所有内容（我们已经知道只有一行）
   call deletebufline('', 1, '$')
-  silent write  # Save empty state first before proceeding
+  silent write  # 先保存空状态再继续
 
   if path_part == ''
-    # Case 1: just @ - directly open code2Prompt selection box
+    # 情况 1: 仅仅 @ - 直接打开 code2Prompt 选择框
     echohl InfoMsg
-    echo 'code2prompt: Detected empty @ notation, opening file selector...'
+    echo 'code2prompt: 检测到空 @ 语法，打开文件选择器...'
     echohl None
-    # Defer the command execution after Vim startup completes
-    # Use execute from timer callback without lambda
+    # 延迟执行命令让 Vim 启动完成
+    # 不用 lambda，使用定时器回调中直接 execute
     def OpenCode2Prompt(timer: number): void
       execute('Code2Prompt')
     enddef
@@ -617,81 +618,81 @@ def HandleClaudeCodeStartup(): void
     return
   endif
 
-  # The path is relative to project root (current working directory)
-  # Because Claude Code starts from project root
+  # 路径相对于项目根目录（当前工作目录）
+  # 因为 Claude Code 从项目根目录启动
   var abs_path = fnamemodify(path_part, ':p')
 
   if isdirectory(abs_path)
-    # Case 2: @directory/ - process entire directory
+    # 情况 2: @目录/ - 处理整个目录
     echohl InfoMsg
-    echo 'code2prompt: Processing directory: ' .. path_part
+    echo 'code2prompt: 处理目录: ' .. path_part
     echohl None
 
     var target_dir = abs_path
-    # For directory: we need to include all files inside it
-    # Use code2prompt directly on the directory
+    # 目录: 需要包含里面所有文件
+    # 直接对目录运行 code2prompt
     var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' -l --absolute-paths 2>&1'
     var output = system(cmd)
 
     if v:shell_error != 0
-      echoerr 'code2prompt: command failed with error: ' .. output
+      echoerr 'code2prompt: 命令执行失败: ' .. output
       return
     endif
 
-    # Split output into lines and append to current file
+    # 分割输出为行并追加到当前文件
     var output_lines = split(output, '\n', 1)
     if len(output_lines) > 0
-      # Append all output lines starting from line 1 (buffer is already empty)
+      # 从第一行开始追加所有输出行（缓冲区已经是空的）
       call append(0, output_lines)
       silent write
 
       echohl InfoMsg
-      echo 'code2prompt: Directory ' .. path_part .. ' content inserted to current file'
+      echo 'code2prompt: 目录 ' .. path_part .. ' 内容已插入当前文件'
       echohl None
     endif
   elseif filereadable(abs_path)
-    # Case 3: @file/path - single file, use existing processing
+    # 情况 3: @文件/路径 - 单个文件，使用现有处理
     echohl InfoMsg
-    echo 'code2prompt: Processing file: ' .. path_part
+    echo 'code2prompt: 处理文件: ' .. path_part
     echohl None
 
-    # Get the code2prompt output for this single file
+    # 获取这个单个文件的 code2prompt 输出
     var target_dir = fnamemodify(abs_path, ':h')
     var file_name = fnamemodify(abs_path, ':t')
     var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' --include ' .. shellescape(file_name) .. ' -l --absolute-paths 2>&1'
     var output = system(cmd)
 
     if v:shell_error != 0
-      echoerr 'code2prompt: command failed with error: ' .. output
+      echoerr 'code2prompt: 命令执行失败: ' .. output
       return
     endif
 
-    # Split output into lines and append to current file
+    # 分割输出为行并追加到当前文件
     var output_lines = split(output, '\n', 1)
     if len(output_lines) > 0
-      # Append all output lines starting from line 1 (buffer is already empty)
+      # 从第一行开始追加所有输出行（缓冲区已经是空的）
       call append(0, output_lines)
       silent write
 
       echohl InfoMsg
-      echo 'code2prompt: File ' .. path_part .. ' content inserted to current file'
+      echo 'code2prompt: 文件 ' .. path_part .. ' 内容已插入当前文件'
       echohl None
     endif
   else
-    # Path not found - do nothing, let user edit manually
+    # 路径找不到 - 不做任何事，让用户手动编辑
     echohl WarningMsg
-    echo 'code2prompt: Path not found: ' .. abs_path .. ' - leaving as-is'
+    echo 'code2prompt: 路径不存在: ' .. abs_path .. ' - 保持原样'
     echohl None
   endif
 enddef
 
-# Auto command to run detection on Vim startup
+# 自动命令在 Vim 启动运行检测
 augroup Code2PromptClaudeDetection
   autocmd!
-  # Run after Vim completes startup and buffer is loaded
+  # Vim 启动完成缓冲区加载后运行
   autocmd VimEnter * ++once call HandleClaudeCodeStartup()
 augroup END
 
 # -------------------------------------
-# End of plugin
+# 插件结束
 # -------------------------------------
