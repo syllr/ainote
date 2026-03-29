@@ -53,6 +53,89 @@ def GetClipboardContent(): string
   return content
 enddef
 
+# 将内容复制到系统剪贴板
+def CopyToClipboard(content_lines: list<string>): void
+  var full_content = join(content_lines, "\n")
+  if has('macunix')
+    # macOS: 使用 pbcopy
+    call system('pbcopy', split(full_content, "\n"))
+  else
+    # Linux: 使用 xclip
+    call system('xclip -selection clipboard', split(full_content, "\n"))
+  endif
+enddef
+
+# 追加内容行到文件末尾
+# 智能判断：如果文件已有非空内容，先加空行再追加
+def AppendToFileEnd(content_lines: list<string>): void
+  # 如果文件为空，从第一行开始插入
+  # 因为 append() 是在指定行后添加，所以从后往前插入保持顺序
+  var last_line = line('$')
+  if last_line > 0 && trim(getline('$')) != ''
+    # 文件已有内容，追加前添加空行
+    call append('$', '')
+    for line in content_lines
+      call append('$', line)
+    endfor
+  else
+    # 文件是空的，从第一行开始插入
+    for i in range(len(content_lines) - 1, 0, -1)
+      call append(0, content_lines[i])
+    endfor
+  endif
+enddef
+
+# 将内容追加到源文件（公共逻辑）
+# 返回 true 表示成功追加，false 表示失败（需要回退到复制到剪贴板）
+def AppendToOriginFile(content_lines: list<string>, display_path: string = ''): bool
+  # 检查全局是否有有效的源文件路径
+  if g:code2prompt_origin_file == ''
+    return false
+  endif
+  if !filereadable(g:code2prompt_origin_file) || !filewritable(g:code2prompt_origin_file)
+    return false
+  endif
+
+  var origin_buf = bufadd(g:code2prompt_origin_file)
+  if origin_buf < 0
+    echoerr 'code2prompt: 无法打开源文件: ' .. g:code2prompt_origin_file
+    g:code2prompt_origin_file = ''
+    return false
+  endif
+
+  # 记住当前缓冲区，切换到源文件缓冲区进行修改
+  # 修改完成后切回当前缓冲区，用户完全不会感觉到切换
+  var current_buf = bufnr('%')
+  var winview = winsaveview()
+
+  # 切换到源文件缓冲区，总是跳到文件末尾再追加
+  silent exe 'buffer ' .. origin_buf
+  normal! G$
+
+  # 使用统一逻辑追加内容到文件末尾
+  AppendToFileEnd(content_lines)
+
+  silent write
+  # 切回原来的缓冲区，恢复原来的光标位置
+  silent exe 'buffer ' .. current_buf
+  winrestview(winview)
+
+  # 清空源文件路径 - 一次性使用
+  var origin_path = g:code2prompt_origin_file
+  g:code2prompt_origin_file = ''
+
+  var origin_display = fnamemodify(origin_path, ':~')
+  echohl InfoMsg
+  if display_path != ''
+    echo 'code2prompt: ' .. display_path .. ' 已追加到 ' .. origin_display
+  else
+    echo 'code2prompt: 内容已追加到 ' .. origin_display
+  endif
+  echohl None
+
+  return true
+enddef
+
 # -------------------------------------
 # 文件选择后的主处理函数
 # -------------------------------------
@@ -80,64 +163,35 @@ def ProcessSelectedFile(abs_path: string): void
   # 因为 code2prompt -c 会把实际内容复制到剪贴板，stdout 只输出提示信息
   var clipboard_content = GetClipboardContent()
 
-  # 如果有源文件（本次选择就是从这里发起的）
-  # 直接将 code2prompt 输出追加到源文件末尾
-  # 这样用户不需要手动从剪贴板粘贴
-  var target_origin: string
-  if g:code2prompt_origin_file != '' && filereadable(g:code2prompt_origin_file) && filewritable(g:code2prompt_origin_file)
-    target_origin = g:code2prompt_origin_file
-  else
-    # 没有存储的源文件 - 当前缓冲区就是源文件
-    # 这就是用户在 fzf 中直接按 Enter 选择的场景
-    var current_buf_file = expand('%:p')
-    if current_buf_file != '' && filereadable(current_buf_file) && filewritable(current_buf_file)
-      target_origin = current_buf_file
-    else
-      # 没有有效的源文件 - 回退到只复制到剪贴板
-      target_origin = ''
-    endif
+  var output_lines = split(clipboard_content, '\n', 1)
+  var display_path = fnamemodify(abs_path, ':~')
+
+  # 尝试追加到全局源文件（当通过 Ctrl-T/Ctrl-V/Ctrl-X 打开文件选择后会有源文件）
+  if AppendToOriginFile(output_lines, display_path)
+    return
   endif
 
-  if target_origin != '' && len(trim(clipboard_content)) > 0
-    var output_lines = split(clipboard_content, '\n', 1)
-    var origin_buf = bufadd(target_origin)
-    if origin_buf >= 0
-      var winview = winsaveview()
-      silent exe 'buffer ' .. origin_buf
-      normal! G$
-      # 如果文件不为空，在新内容前添加空行
-      # 如果文件是空的（0 行或第一行为空），直接从第一行插入
-      var last_line = line('$')
-      if last_line > 0 && trim(getline('$')) != ''
-        # 文件已有内容，追加前添加空行
-        call append('$', '')
-        for line in output_lines
-          call append('$', line)
-        endfor
-      else
-        # 文件是空的，从第一行开始插入
-        # 因为 append() 是在指定行后添加，所以从后往前插入保持顺序
-        for i in range(len(output_lines) - 1, 0, -1)
-          call append(0, output_lines[i])
-        endfor
-      endif
-      silent write
-      winrestview(winview)
+  # 没有存储的源文件 - 当前缓冲区就是源文件
+  # 这就是用户在 fzf 中直接按 Enter 选择的场景
+  var current_buf_file = expand('%:p')
+  if current_buf_file != '' && filereadable(current_buf_file) && filewritable(current_buf_file)
+    # 当前缓冲区就是目标文件，直接追加
+    var winview = winsaveview()
+    normal! G$
+    AppendToFileEnd(output_lines)
+    silent write
+    winrestview(winview)
 
-      var display_path = fnamemodify(abs_path, ':~')
-      var origin_display = fnamemodify(target_origin, ':~')
-      echohl InfoMsg
-      echo 'code2prompt: ' .. display_path .. ' 已追加到 ' .. origin_display
-      echohl None
-      # 清空源文件路径 - 一次性使用
-      g:code2prompt_origin_file = ''
-      return
-    endif
+    echohl InfoMsg
+    echo 'code2prompt: ' .. display_path .. ' 已追加到当前文件'
+    echohl None
+    return
   endif
 
-  # 没有源文件或打开失败或剪贴板为空 - 回退到只复制到剪贴板
+  # 没有有效的源文件 - 回退到只复制到剪贴板
+  CopyToClipboard(output_lines)
   echohl InfoMsg
-  echo 'code2prompt: 内容已复制到系统剪贴板来自 ' .. abs_path
+  echo 'code2prompt: 内容已复制到系统剪贴板来自 ' .. display_path
   echohl None
 enddef
 
@@ -372,54 +426,17 @@ def Code2PromptProcessSelection(line1: number, line2: number): void
   add(content_lines, '```')
   add(content_lines, '')
 
-  # 检查是否有有效的源文件可以追加
-  if g:code2prompt_origin_file != '' && filereadable(g:code2prompt_origin_file)
-    # 分支 1: 有有效源文件 - 追加到**源文件末尾**
-    # 在后台打开源文件，追加，保存，关闭
-    # 我们静默操作避免打扰用户
-    var origin_buf = bufadd(g:code2prompt_origin_file)
-    if origin_buf < 0
-      echoerr 'code2prompt: 无法打开源文件: ' .. g:code2prompt_origin_file
-      g:code2prompt_origin_file = ''
-      return
-    endif
-
-    # 保持原始窗口视图
-    var winview = winsaveview()
-    silent exe 'buffer ' .. origin_buf
-    normal! G$
-    # 在末尾追加每个内容行
-    for line in content_lines
-      call append('$', line)
-    endfor
-    silent write
-    winrestview(winview)
-
-    # 清空源文件 - 这只是一次性使用
-    var origin_path = g:code2prompt_origin_file
-    g:code2prompt_origin_file = ''
-
-    echohl InfoMsg
-    echo 'code2prompt: 选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2) .. ' 已追加到 ' .. fnamemodify(origin_path, ':~')
-    echohl None
-  else
-    # 分支 2: 没有源文件 - 格式化内容复制到系统剪贴板
-    # 合并所有行为单个字符串
-    var full_content = join(content_lines, "\n")
-
-    # 根据 OS 复制到剪贴板
-    if has('macunix')
-      # macOS: 使用 pbcopy
-      call system('pbcopy', split(full_content, "\n"))
-    else
-      # Linux: 使用 xclip
-      call system('xclip -selection clipboard', split(full_content, "\n"))
-    endif
-
-    echohl InfoMsg
-    echo 'code2prompt: 选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2) .. ' 已复制到剪贴板'
-    echohl None
+  # 尝试追加到全局源文件（当通过 Ctrl-T/Ctrl-V/Ctrl-X 打开文件选择后会有源文件）
+  var msg_suffix = '选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2)
+  if AppendToOriginFile(content_lines, msg_suffix)
+    return
   endif
+
+  # 没有源文件 - 复制到系统剪贴板
+  CopyToClipboard(content_lines)
+  echohl InfoMsg
+  echo 'code2prompt: 选中 ' .. display_path .. ' 行 ' .. string(line1) .. '-' .. string(line2) .. ' 已复制到剪贴板'
+  echohl None
 enddef
 
 def Code2PromptWithHiddenFileCommand(line1: number, line2: number, args: string = ''): void
