@@ -651,10 +651,60 @@ def HandleClaudeCodeStartup(): void
       echohl None
     endif
   else
-    # 路径找不到 - 不做任何事，让用户手动编辑
-    echohl WarningMsg
-    echo 'code2prompt: 路径不存在: ' .. abs_path .. ' - 保持原样'
-    echohl None
+    # 路径不存在 - 自动打开 fzf 选择框，并且预填充输入的路径作为查询关键词
+    # 不用提示，直接打开，用户看不到提示反而干净
+
+    # 起始路径总是当前工作目录（项目根目录）
+    var start_path = getcwd()
+    # 默认不包含隐藏文件（和 :Code2Prompt 保持一致）
+    var include_hidden = false
+
+    # 构建 walker-skip 列表（和 Code2PromptFzf 保持一致）
+    var skip_dirs: string
+    if include_hidden
+      skip_dirs = '.git,node_modules,target,venv,.venv'
+    else
+      skip_dirs = '.*,.git,node_modules,target,venv,.venv'
+    endif
+
+    # 构建 fzf 选项，添加 --query 预填充用户输入的查询词
+    var fzf_options: list<any> = []
+    add(fzf_options, '--layout=reverse')
+    add(fzf_options, '--info=inline')
+    add(fzf_options, '--height=40%')
+    if include_hidden
+      add(fzf_options, '--walker=file,follow,hidden')
+    else
+      add(fzf_options, '--walker=file,follow')
+    endif
+    add(fzf_options, '--walker-skip')
+    add(fzf_options, skip_dirs)
+    add(fzf_options, '--expect')
+    add(fzf_options, 'ctrl-t,ctrl-x,ctrl-v')
+    add(fzf_options, '--multi')
+    # 添加预查询：把用户输入的路径部分作为初始查询词填充进去
+    # 用户输入什么，fzf 打开就已经搜索好什么
+    add(fzf_options, '--query')
+    add(fzf_options, path_part)
+    # 自定义提示符
+    if include_hidden
+      add(fzf_options, '--prompt')
+      add(fzf_options, 'code2prompt (含隐藏) > ')
+    else
+      add(fzf_options, '--prompt')
+      add(fzf_options, 'code2prompt > ')
+    endif
+
+    # 调用 fzf，和 Code2PromptFzf 保持相同的预览配置
+    var spec = {
+      'cwd': start_path,
+      'sink*': function('ProcessSelectedFiles'),
+      'options': fzf_options
+    }
+    var wrapped_spec = fzf#vim#with_preview(spec)
+    call fzf#run(wrapped_spec)
+
+    silent! write
   endif
 enddef
 
