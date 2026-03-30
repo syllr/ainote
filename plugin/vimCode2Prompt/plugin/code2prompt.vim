@@ -254,8 +254,10 @@ def ProcessSelectedFiles(lines: list<any>): void
     if len(lines) < 2
       return
     endif
-    var abs_path = lines[1]
-    ProcessSelectedFile(abs_path)
+    # 支持多选：逐个处理所有选中文件
+    for abs_path in lines[1 : ]
+      ProcessSelectedFile(abs_path)
+    endfor
     return
   endif
 
@@ -335,6 +337,8 @@ def Code2PromptFzf(start_path: string, include_hidden: bool = false): void
   # 为 Ctrl-T/Ctrl-X/Ctrl-V 期望按键绑定 - 允许在新标签页/分屏打开
   add(fzf_options, '--expect')
   add(fzf_options, 'ctrl-t,ctrl-x,ctrl-v')
+  # 启用多选模式 - 允许按 Tab 多选多个文件
+  add(fzf_options, '--multi')
 
   # 自定义提示符（每部分单独列表项，不需要引号 - fzf.vim 会自动转义）
   if include_hidden
