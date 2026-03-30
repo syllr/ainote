@@ -1,0 +1,3 @@
+[submodule "plugin/vimCode2Prompt"]
+	path = plugin/vimCode2Prompt
+	url = git@github.com:syllr/vimCode2Prompt.git
