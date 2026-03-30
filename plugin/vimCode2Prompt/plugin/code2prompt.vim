@@ -65,6 +65,25 @@ def CopyToClipboard(content_lines: list<string>): void
   endif
 enddef
 
+# 运行 code2prompt 命令，获取结果内容
+# 参数: abs_path - 要处理的文件或目录绝对路径
+# 返回: 成功 → 分割好的内容行列表（非空），失败 → 空列表
+def RunCode2prompt(abs_path: string): list<string>
+  # 固定参数: -l 输出行号, --absolute-paths 使用绝对路径, -c 输出复制到剪贴板
+  var cmd = 'code2prompt ' .. shellescape(abs_path) .. ' -l --absolute-paths -c 2>&1'
+  var output = system(cmd)
+
+  if v:shell_error != 0
+    echoerr 'code2prompt: 命令执行失败: ' .. output
+    return []
+  endif
+
+  # 从系统剪贴板读取实际内容
+  # 因为 code2prompt -c 会把实际内容复制到剪贴板，stdout 只输出提示信息
+  var clipboard_content = GetClipboardContent()
+  return split(clipboard_content, '\n', 1)
+enddef
+
 # 追加内容行到文件末尾
 # 智能判断：如果文件已有非空内容，先加空行再追加
 def AppendToFileEnd(content_lines: list<string>): void
@@ -176,22 +195,11 @@ def ProcessSelectedFile(abs_path: string): void
     return
   endif
 
-  # 直接对单个文件运行 code2prompt
-  # code2prompt 会生成 prompt 并通过 -c 复制到剪贴板
-  # -l: 输出行号，--line-numbers: 在输出中启用行号
-  var cmd = 'code2prompt ' .. shellescape(abs_path) .. ' -l --absolute-paths -c 2>&1'
-  var output = system(cmd)
-
-  if v:shell_error != 0
-    echoerr 'code2prompt: 命令执行失败: ' .. output
+  # 直接对单个文件运行 code2prompt（统一使用公共函数）
+  var output_lines = RunCode2prompt(abs_path)
+  if len(output_lines) == 0
     return
   endif
-
-  # 从系统剪贴板读取实际内容
-  # 因为 code2prompt -c 会把实际内容复制到剪贴板，stdout 只输出提示信息
-  var clipboard_content = GetClipboardContent()
-
-  var output_lines = split(clipboard_content, '\n', 1)
   var display_path = fnamemodify(abs_path, ':~')
 
   # 如果全局已经有源文件（通过 Ctrl-T/Ctrl-V/Ctrl-X 打开新文件后保存的源文件
@@ -591,22 +599,13 @@ def HandleClaudeCodeStartup(): void
     echohl None
 
     var target_dir = abs_path
-    # 目录: 需要包含里面所有文件
-    # code2prompt -c: 输出复制到剪贴板，stdout 只输出提示信息
-    var cmd = 'code2prompt ' .. shellescape(target_dir) .. ' -l --absolute-paths -c 2>&1'
-    var output = system(cmd)
-
-    if v:shell_error != 0
-      echoerr 'code2prompt: 命令执行失败: ' .. output
+    # 目录: 需要包含里面所有文件（统一使用公共函数）
+    var output_lines = RunCode2prompt(target_dir)
+    if len(output_lines) == 0
       return
     endif
 
-    # 从系统剪贴板读取实际内容，因为 -c 复制到剪贴板
-    var clipboard_content = GetClipboardContent()
-
-    if len(trim(clipboard_content)) > 0
-      # 分割剪贴板内容为行并追加到当前文件
-      var output_lines = split(clipboard_content, '\n', 1)
+    if len(trim(join(output_lines, '\n'))) > 0
       # 从第一行开始追加所有输出行（缓冲区已经是空的）
       call append(0, output_lines)
       silent! write
@@ -621,22 +620,13 @@ def HandleClaudeCodeStartup(): void
     echo 'code2prompt: 处理文件: ' .. path_part
     echohl None
 
-    # 获取这个单个文件的 code2prompt 输出
-    # -c: 输出复制到剪贴板，stdout 只输出提示信息
-    var cmd = 'code2prompt ' .. shellescape(abs_path) .. ' -l --absolute-paths -c 2>&1'
-    var output = system(cmd)
-
-    if v:shell_error != 0
-      echoerr 'code2prompt: 命令执行失败: ' .. output
+    # 获取这个单个文件的 code2prompt 输出（统一使用公共函数）
+    var output_lines = RunCode2prompt(abs_path)
+    if len(output_lines) == 0
       return
     endif
 
-    # 从系统剪贴板读取实际内容，因为 -c 复制到剪贴板
-    var clipboard_content = GetClipboardContent()
-
-    if len(trim(clipboard_content)) > 0
-      # 分割剪贴板内容为行并追加到当前文件
-      var output_lines = split(clipboard_content, '\n', 1)
+    if len(trim(join(output_lines, '\n'))) > 0
       # 从第一行开始追加所有输出行（缓冲区已经是空的）
       call append(0, output_lines)
       silent! write
