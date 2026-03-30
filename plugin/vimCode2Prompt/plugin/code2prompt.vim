@@ -69,8 +69,22 @@ enddef
 # 参数: abs_path - 要处理的文件或目录绝对路径
 # 返回: 成功 → 分割好的内容行列表（非空），失败 → 空列表
 def RunCode2prompt(abs_path: string): list<string>
-  # 固定参数: -l 输出行号, --absolute-paths 使用绝对路径, -c 输出复制到剪贴板
-  var cmd = 'code2prompt ' .. shellescape(abs_path) .. ' -l --absolute-paths -c 2>&1'
+  # 转换为相对于当前工作目录（通常是项目根目录）的相对路径
+  # code2prompt 接收相对路径输入就可以了，输入路径更干净
+  # 添加 ./ 前缀确保 code2prompt 能正确识别当前目录下的路径
+  var rel_path = fnamemodify(abs_path, ':.')
+  # 如果不是以 ./ 和 / 开头，加上 ./ 前缀
+  # 使用 strpart 避开 Vim9 切片语法问题
+  if len(rel_path) >= 2 && strpart(rel_path, 0, 2) ==# './'
+    # 已经有 ./ 前缀，不需要再加
+  elseif len(rel_path) >= 1 && strpart(rel_path, 0, 1) ==# '/'
+    # 已经是绝对路径，不需要加
+  else
+    # 其他情况，加上 ./ 前缀
+    rel_path = './' .. rel_path
+  endif
+  # 固定参数: -l 输出行号, --absolute-paths 生成输出中使用绝对路径, -c 输出复制到剪贴板
+  var cmd = 'code2prompt ' .. shellescape(rel_path) .. ' -l --absolute-paths -c 2>&1'
   var output = system(cmd)
 
   if v:shell_error != 0
