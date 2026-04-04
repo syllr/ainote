@@ -5,6 +5,8 @@
 .idea/
 .playwright/
 .playwright-cli
+.claude/
+.obsidian/
 
 # macOS DS_Store file
 .DS_Store
