@@ -3,6 +3,8 @@
 
 # JetBrains IDE configuration
 .idea/
+.playwright/
+.playwright-cli
 
 # macOS DS_Store file
 .DS_Store
